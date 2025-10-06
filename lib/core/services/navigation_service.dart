@@ -8,7 +8,9 @@ import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/dashboard/presentation/pages/farmer_dashboard_page.dart';
 import '../../features/dashboard/presentation/pages/driver_dashboard_page.dart';
 import '../../features/dashboard/presentation/pages/labour_dashboard_page.dart';
-import '../../features/role/presentation/pages/role_registration_page.dart';
+import '../../features/role/presentation/pages/farmer_registration_page.dart';
+import '../../features/role/presentation/pages/labour_registration_page.dart';
+import '../../features/role/presentation/pages/driver_registration_page.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -46,12 +48,18 @@ class NavigationService {
           builder: (context, state) => const RoleSelectionPage(),
         ),
         GoRoute(
-          path: '/role-registration/:role',
-          builder: (context, state) {
-            final role = state.pathParameters['role']!;
-            return RoleRegistrationPage(role: role);
-          },
+          path: '/role-registration/farmer',
+          builder: (context, state) => const FarmerRegistrationPage(),
         ),
+        GoRoute(
+          path: '/role-registration/driver',
+          builder: (context, state) => const DriverRegistrationPage(),
+        ),
+        GoRoute(
+          path: '/role-registration/labour',
+          builder: (context, state) => const LabourRegistrationPage(),
+        ),
+
         GoRoute(
           path: '/dashboard/farmer',
           builder: (context, state) => const FarmerDashboardPage(),
