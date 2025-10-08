@@ -185,6 +185,7 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
           width: 320,
           child: DropdownButtonFormField<String>(
             value: selectedValue,
+            hint: Text("Select $label"),
 
             items: items
                 .map((item) => DropdownMenuItem(value: item, child: Text(item)))
