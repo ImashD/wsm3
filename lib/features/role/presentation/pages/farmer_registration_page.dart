@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/services/auth_service.dart';
 
 class FarmerRegistrationPage extends StatefulWidget {
   const FarmerRegistrationPage({super.key});
@@ -76,10 +77,26 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
 
-    if (!mounted) return;
-    context.push('/dashboard/farmer');
+    try {
+      final authService = AuthService();
+      await authService.registerRole(UserRole.farmer);
+      await authService.setUserRole(UserRole.farmer);
 
-    setState(() => _isLoading = false);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Farmer registered successfully!")),
+      );
+
+      context.push('/dashboard/farmer');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Widget _buildTextField({

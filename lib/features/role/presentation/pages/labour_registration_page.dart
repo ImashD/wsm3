@@ -44,6 +44,7 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    await Future.delayed(const Duration(seconds: 1));
 
     try {
       final authService = AuthService();

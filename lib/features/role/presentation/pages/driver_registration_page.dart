@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/services/auth_service.dart';
 
 class DriverRegistrationPage extends StatefulWidget {
   const DriverRegistrationPage({super.key});
@@ -87,10 +88,26 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
 
-    if (!mounted) return;
-    context.push('/dashboard/driver');
+    try {
+      final authService = AuthService();
+      await authService.registerRole(UserRole.driver);
+      await authService.setUserRole(UserRole.driver);
 
-    setState(() => _isLoading = false);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Driver registered successfully!")),
+      );
+
+      context.push('/dashboard/driver');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Widget _buildTextField({
