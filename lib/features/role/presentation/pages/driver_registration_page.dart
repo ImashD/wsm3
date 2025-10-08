@@ -28,7 +28,6 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
   String? _selectedVehicleType;
 
   final List<String> _vehicleTypes = [
-    "Car",
     "Lorry",
     "Tractor",
     "Three-wheeler",
@@ -295,12 +294,6 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
                             hint: "e.g. 5",
                             controller: _experienceController,
                             inputType: TextInputType.number,
-                          ),
-                          _buildTextField(
-                            label: "Email",
-                            hint: "Optional email",
-                            controller: _emailController,
-                            inputType: TextInputType.emailAddress,
                           ),
 
                           // License upload

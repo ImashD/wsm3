@@ -23,18 +23,18 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
 
       if (isRegistered) {
         await authService.setUserRole(role);
-        context.go('/dashboard/${role.name}');
+        context.push('/dashboard/${role.name}');
       } else {
         // Navigate directly to the separate registration page
         switch (role) {
           case UserRole.farmer:
-            context.go('/role-registration/farmer');
+            context.push('/role-registration/farmer/step1');
             break;
           case UserRole.driver:
-            context.go('/role-registration/driver');
+            context.push('/role-registration/driver');
             break;
           case UserRole.labour:
-            context.go('/role-registration/labour');
+            context.push('/role-registration/labour');
             break;
         }
       }

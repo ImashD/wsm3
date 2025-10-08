@@ -48,9 +48,10 @@ class NavigationService {
           builder: (context, state) => const RoleSelectionPage(),
         ),
         GoRoute(
-          path: '/role-registration/farmer',
+          path: '/role-registration/farmer/step1',
           builder: (context, state) => const FarmerRegistrationPage(),
         ),
+
         GoRoute(
           path: '/role-registration/driver',
           builder: (context, state) => const DriverRegistrationPage(),

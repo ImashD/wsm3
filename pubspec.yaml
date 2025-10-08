@@ -54,6 +54,7 @@ dependencies:
   # Utils
   logger: ^2.0.2
   image_picker: ^1.0.7
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
