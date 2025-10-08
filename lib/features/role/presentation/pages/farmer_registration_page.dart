@@ -31,12 +31,29 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
   final List<String> _districts = [
     "Colombo",
     "Gampaha",
+    "Kalutara",
     "Kandy",
-    "Kurunegala",
+    "Matale",
+    "Nuwara Eliya",
+    "Galle",
     "Matara",
+    "Hambantota",
     "Jaffna",
+    "Kilinochchi",
+    "Mannar",
+    "Vavuniya",
+    "Mullaitivu",
+    "Batticaloa",
+    "Ampara",
+    "Trincomalee",
+    "Kurunegala",
+    "Puttalam",
     "Anuradhapura",
+    "Polonnaruwa",
     "Badulla",
+    "Monaragala",
+    "Ratnapura",
+    "Kegalle",
   ];
 
   @override
@@ -60,7 +77,7 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
     await Future.delayed(const Duration(seconds: 1));
 
     if (!mounted) return;
-    context.push('/role-registration/farmer/dashboard');
+    context.push('/dashboard/farmer');
 
     setState(() => _isLoading = false);
   }
@@ -75,7 +92,7 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "$label*",
+          label,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
@@ -92,8 +109,20 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
               if (value == null || value.isEmpty) {
                 return "Please enter $label";
               }
-              if (label == "N.I.C" && value.length != 12) {
-                return "NIC must be exactly 12 characters";
+
+              if (label == "Full Name") {
+                final nameReg = RegExp(r'^[A-Za-z ]+$');
+                if (!nameReg.hasMatch(value)) {
+                  return "Name must contain only English letters";
+                }
+              }
+
+              if (label == "N.I.C") {
+                final oldNIC = RegExp(r'^[0-9]{9}[vV]$');
+                final newNIC = RegExp(r'^[0-9]{12}$');
+                if (!oldNIC.hasMatch(value) && !newNIC.hasMatch(value)) {
+                  return "Invalid NIC format (e.g., 123456789V or 200012345678)";
+                }
               }
               return null;
             },
@@ -127,7 +156,7 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "$label*",
+          label,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
@@ -139,7 +168,7 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
           width: 320,
           child: DropdownButtonFormField<String>(
             value: selectedValue,
-            hint: Text("Select $label"),
+
             items: items
                 .map((item) => DropdownMenuItem(value: item, child: Text(item)))
                 .toList(),
@@ -175,7 +204,7 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "$label*",
+          label,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
@@ -185,8 +214,8 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
         const SizedBox(height: 6),
         Container(
           width: 320,
-          height: 45,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          height: 50, // 🔹 Reduced height
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: const Color.fromARGB(255, 118, 226, 198),
             borderRadius: BorderRadius.circular(8),
@@ -230,11 +259,16 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
                 Positioned(
                   top: 16,
                   left: 16,
-                  child: CircleAvatar(
-                    backgroundColor: const Color(0xFFE1FCF9),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black),
-                      onPressed: () => context.pop(),
+                  child: Material(
+                    elevation: 4, // ✅ Shadow added
+                    shape: const CircleBorder(),
+                    color: Colors.transparent,
+                    child: CircleAvatar(
+                      backgroundColor: const Color(0xFFE1FCF9),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.black),
+                        onPressed: () => context.pop(),
+                      ),
                     ),
                   ),
                 ),
@@ -327,10 +361,12 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
                           value: _landSize,
                           unit: "acres",
                           onIncrement: () => setState(() => _landSize++),
-                          onDecrement: () => setState(() => _landSize--),
+                          onDecrement: () => setState(
+                            () => _landSize = _landSize > 0 ? _landSize - 1 : 0,
+                          ),
                         ),
                         _buildDropdownField(
-                          label: "Location / District",
+                          label: "Location (District)",
                           items: _districts,
                           selectedValue: _selectedDistrict,
                           onChanged: (value) {
@@ -372,7 +408,7 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
                                       color: Colors.white,
                                     )
                                   : const Text(
-                                      "Register",
+                                      "Save & REGISTER",
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,

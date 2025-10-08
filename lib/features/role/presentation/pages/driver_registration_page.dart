@@ -1,9 +1,7 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../core/services/auth_service.dart';
 
 class DriverRegistrationPage extends StatefulWidget {
   const DriverRegistrationPage({super.key});
@@ -16,71 +14,83 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _nicController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _vehicleNoController = TextEditingController();
-  final TextEditingController _customVehicleController =
-      TextEditingController();
-  final TextEditingController _experienceController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  File? _licenseImageFile;
-  String? _selectedVehicleType;
+  final _nameController = TextEditingController();
+  final _nicController = TextEditingController();
+  int _experience = 0;
+  File? _licenseImage;
 
-  final List<String> _vehicleTypes = [
-    "Lorry",
-    "Tractor",
-    "Three-wheeler",
-    "Bike",
-    "Other",
-  ];
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
     _nameController.dispose();
     _nicController.dispose();
-    _phoneController.dispose();
-    _vehicleNoController.dispose();
-    _customVehicleController.dispose();
-    _experienceController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickLicenseImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  Future<void> _pickLicenseImage(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
-      setState(() => _licenseImageFile = File(pickedFile.path));
+      setState(() {
+        _licenseImage = File(pickedFile.path);
+      });
     }
   }
 
-  Future<void> _register() async {
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        height: 150,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
+              icon: const Icon(Icons.photo_library, color: Colors.black),
+              label: const Text(
+                "Pick from Gallery",
+                style: TextStyle(color: Colors.black),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                _pickLicenseImage(ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.camera_alt, color: Colors.black),
+              label: const Text(
+                "Take a Photo",
+                style: TextStyle(color: Colors.black),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                _pickLicenseImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_licenseImageFile == null) {
+    if (_licenseImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please upload your license image")),
+        const SnackBar(content: Text("Please upload your driving license")),
       );
       return;
     }
 
     setState(() => _isLoading = true);
+    await Future.delayed(const Duration(seconds: 1));
 
-    try {
-      final authService = AuthService();
-      await authService.registerRole(UserRole.driver);
-      await authService.setUserRole(UserRole.driver);
+    if (!mounted) return;
+    context.push('/dashboard/driver');
 
-      if (!mounted) return;
-      context.go('/dashboard/driver');
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    setState(() => _isLoading = false);
   }
 
   Widget _buildTextField({
@@ -93,7 +103,7 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "$label*",
+          label,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
@@ -102,17 +112,28 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
         ),
         const SizedBox(height: 6),
         SizedBox(
-          width: double.infinity,
+          width: 320,
           child: TextFormField(
             controller: controller,
             keyboardType: inputType,
             validator: (value) {
-              if (value == null || value.isEmpty) return "Please enter $label";
-              if (label == "N.I.C" && value.length != 12) {
-                return "NIC must be exactly 12 characters";
+              if (value == null || value.isEmpty) {
+                return "Please enter $label";
               }
-              if (label == "Phone Number" && value.length < 10) {
-                return "Enter a valid phone number";
+
+              if (label == "Full Name") {
+                final nameReg = RegExp(r'^[A-Za-z ]+$');
+                if (!nameReg.hasMatch(value)) {
+                  return "Name must contain only English letters";
+                }
+              }
+
+              if (label == "N.I.C") {
+                final oldNIC = RegExp(r'^[0-9]{9}[vV]$');
+                final newNIC = RegExp(r'^[0-9]{12}$');
+                if (!oldNIC.hasMatch(value) && !newNIC.hasMatch(value)) {
+                  return "Invalid NIC format (e.g., 123456789V or 200012345678)";
+                }
               }
               return null;
             },
@@ -136,6 +157,102 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
     );
   }
 
+  Widget _buildNumericField({
+    required String label,
+    required int value,
+    required VoidCallback onIncrement,
+    required VoidCallback onDecrement,
+    String unit = "",
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: 320,
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFE0B2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.remove, size: 18),
+                onPressed: value > 0 ? onDecrement : null,
+              ),
+              Text(
+                "$value $unit",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add, size: 18),
+                onPressed: onIncrement,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildFileUploadField({required String label}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 6),
+        GestureDetector(
+          onTap: _showImagePickerOptions,
+          child: Container(
+            width: 320,
+            height: 150,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE0B2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade400),
+            ),
+            child: _licenseImage != null
+                ? Image.file(_licenseImage!, fit: BoxFit.cover)
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.upload_file, color: Colors.black),
+                      SizedBox(height: 8),
+                      Text(
+                        "Upload License",
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,7 +260,7 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top header
+            // Header
             Stack(
               children: [
                 Container(height: 160, color: const Color(0xFFFF9800)),
@@ -155,10 +272,10 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
                     shape: const CircleBorder(),
                     color: Colors.transparent,
                     child: CircleAvatar(
-                      backgroundColor: const Color(0xFFFFF3E0),
+                      backgroundColor: const Color(0xFFFFE0B2),
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.black),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => context.pop(),
                       ),
                     ),
                   ),
@@ -173,15 +290,8 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF3E0),
+                            color: const Color(0xFFFFE0B2),
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 4,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
                           ),
                           child: Image.asset('assets/logo.png', height: 50),
                         ),
@@ -201,143 +311,53 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
               ],
             ),
 
-            // Bottom container with form
+            // Form Section
             Expanded(
               child: Container(
-                width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                child: Scrollbar(
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          _buildTextField(
-                            label: "Name",
-                            hint: "Your full name",
-                            controller: _nameController,
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTextField(
+                          label: "Full Name",
+                          hint: "Your full name",
+                          controller: _nameController,
+                        ),
+                        _buildTextField(
+                          label: "N.I.C",
+                          hint: "Your NIC number",
+                          controller: _nicController,
+                        ),
+                        _buildNumericField(
+                          label: "Driving Experience",
+                          value: _experience,
+                          unit: "years",
+                          onIncrement: () => setState(() => _experience++),
+                          onDecrement: () => setState(
+                            () => _experience > 0 ? _experience-- : 0,
                           ),
-                          _buildTextField(
-                            label: "N.I.C",
-                            hint: "Your NIC number",
-                            controller: _nicController,
-                          ),
-                          _buildTextField(
-                            label: "Phone Number",
-                            hint: "Your phone number",
-                            controller: _phoneController,
-                            inputType: TextInputType.phone,
-                          ),
-                          _buildTextField(
-                            label: "Vehicle Number",
-                            hint: "e.g. ABC-1234",
-                            controller: _vehicleNoController,
-                          ),
-
-                          // Vehicle type dropdown
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: const Text(
-                              "Vehicle Type*",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            value: _selectedVehicleType,
-                            items: _vehicleTypes
-                                .map(
-                                  (type) => DropdownMenuItem(
-                                    value: type,
-                                    child: Text(type),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() => _selectedVehicleType = value);
-                            },
-                            validator: (value) {
-                              if (value == null)
-                                return "Please select a vehicle type";
-                              if (value == "Other" &&
-                                  _customVehicleController.text.isEmpty) {
-                                return "Please enter your vehicle type";
-                              }
-                              return null;
-                            },
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: const Color(0xFFFFE0B2),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          if (_selectedVehicleType == "Other")
-                            _buildTextField(
-                              label: "Custom Vehicle Type",
-                              hint: "Enter your vehicle type",
-                              controller: _customVehicleController,
-                            ),
-                          _buildTextField(
-                            label: "Experience (years)",
-                            hint: "e.g. 5",
-                            controller: _experienceController,
-                            inputType: TextInputType.number,
-                          ),
-
-                          // License upload
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: const Text(
-                              "Upload Driving License*",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: _pickLicenseImage,
-                            child: Container(
-                              width: double.infinity,
-                              height: 150,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFE0B2),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: _licenseImageFile == null
-                                  ? const Icon(
-                                      Icons.upload_file,
-                                      size: 40,
-                                      color: Colors.black54,
-                                    )
-                                  : Image.file(
-                                      _licenseImageFile!,
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Submit button
-                          SizedBox(
+                        ),
+                        _buildFileUploadField(label: "Driving License"),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: SizedBox(
                             width: 200,
                             child: ElevatedButton(
-                              onPressed: _isLoading ? null : _register,
+                              onPressed: _isLoading ? null : _submitForm,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF9800),
+                                backgroundColor: const Color.fromARGB(
+                                  255,
+                                  199,
+                                  103,
+                                  0,
+                                ),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
@@ -359,9 +379,9 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
                                     ),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
                   ),
                 ),

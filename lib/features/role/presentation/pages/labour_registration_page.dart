@@ -14,16 +14,29 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
   bool _isLoading = false;
 
   final _nameController = TextEditingController();
+  final _nicController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  final _experienceController = TextEditingController();
+  final _customSkillController = TextEditingController();
+  int _experience = 0;
+  int _age = 18;
+
+  String? _selectedSkill;
+
+  final List<String> _skills = [
+    "Harvesting",
+    "Planting",
+    "Transporting",
+    "Other",
+  ];
 
   @override
   void dispose() {
     _nameController.dispose();
+    _nicController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
-    _experienceController.dispose();
+    _customSkillController.dispose();
     super.dispose();
   }
 
@@ -38,7 +51,12 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
       await authService.setUserRole(UserRole.labour);
 
       if (!mounted) return;
-      context.go('/dashboard/labour');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Labour registered successfully!")),
+      );
+
+      context.push('/dashboard/labour');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -49,67 +67,336 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Register as Labour')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildTextField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    TextInputType inputType = TextInputType.text,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          width: 320,
+          child: TextFormField(
+            controller: controller,
+            keyboardType: inputType,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "Please enter $label";
+              }
+
+              // Name validation (letters only)
+              if (label == "Full Name") {
+                final nameReg = RegExp(r'^[A-Za-z ]+$');
+                if (!nameReg.hasMatch(value)) {
+                  return "Name must contain only English letters";
+                }
+              }
+
+              // NIC validation
+              if (label == "N.I.C") {
+                final oldNIC = RegExp(r'^[0-9]{9}[vV]$');
+                final newNIC = RegExp(r'^[0-9]{12}$');
+                if (!oldNIC.hasMatch(value) && !newNIC.hasMatch(value)) {
+                  return "Invalid NIC format (e.g., 123456789V or 200012345678)";
+                }
+              }
+
+              // Phone validation
+              if (label == "Phone Number") {
+                final phoneReg = RegExp(r'^[0-9]{10,}$');
+                if (!phoneReg.hasMatch(value)) {
+                  return "Enter a valid phone number";
+                }
+              }
+
+              return null;
+            },
+            decoration: InputDecoration(
+              hintText: hint,
+              filled: true,
+              fillColor: const Color(0xFFBBDEFB),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 14,
+                horizontal: 12,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildNumericField({
+    required String label,
+    required int value,
+    required VoidCallback onIncrement,
+    required VoidCallback onDecrement,
+    String unit = "",
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: 320,
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFBBDEFB),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (value) => value!.isEmpty ? 'Enter your name' : null,
+              IconButton(
+                icon: const Icon(Icons.remove, size: 18),
+                onPressed: value > 0 ? onDecrement : null,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  prefixIcon: Icon(Icons.phone),
+              Text(
+                "$value $unit",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
-                keyboardType: TextInputType.phone,
-                validator: (value) =>
-                    value!.isEmpty ? 'Enter your phone' : null,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Address',
-                  prefixIcon: Icon(Icons.location_on),
-                ),
-                maxLines: 2,
-                validator: (value) =>
-                    value!.isEmpty ? 'Enter your address' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _experienceController,
-                decoration: const InputDecoration(
-                  labelText: 'Years of Experience',
-                  prefixIcon: Icon(Icons.work_history),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Enter experience' : null,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _register,
-                child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('Register'),
+              IconButton(
+                icon: const Icon(Icons.add, size: 18),
+                onPressed: onIncrement,
               ),
             ],
           ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF2196F3),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Stack(
+              children: [
+                Container(height: 160, color: const Color(0xFF2196F3)),
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: Material(
+                    elevation: 4,
+                    shape: const CircleBorder(),
+                    color: Colors.transparent,
+                    child: CircleAvatar(
+                      backgroundColor: const Color(0xFFBBDEFB),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.black),
+                        onPressed: () => context.pop(),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 46,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFBBDEFB),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Image.asset('assets/logo.png', height: 50),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          "Labour Registration",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Form
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildTextField(
+                          label: "Full Name",
+                          hint: "Your full name",
+                          controller: _nameController,
+                        ),
+                        _buildTextField(
+                          label: "N.I.C",
+                          hint: "Your NIC number",
+                          controller: _nicController,
+                        ),
+                        _buildTextField(
+                          label: "Phone Number",
+                          hint: "Your phone number",
+                          controller: _phoneController,
+                          inputType: TextInputType.phone,
+                        ),
+                        _buildNumericField(
+                          label: "Age",
+                          value: _age,
+                          unit: "years",
+                          onIncrement: () => setState(() => _age++),
+                          onDecrement: () =>
+                              setState(() => _age > 18 ? _age-- : 18),
+                        ),
+                        _buildTextField(
+                          label: "Address",
+                          hint: "Your home address",
+                          controller: _addressController,
+                        ),
+
+                        // Skill dropdown
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: const Text(
+                            "Skill",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<String>(
+                          value: _selectedSkill,
+                          hint: Text("Select Your Skill Type"),
+                          items: _skills
+                              .map(
+                                (skill) => DropdownMenuItem(
+                                  value: skill,
+                                  child: Text(skill),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedSkill = value;
+                            });
+                          },
+                          validator: (value) =>
+                              value == null ? "Please select a skill" : null,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFBBDEFB),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        if (_selectedSkill == "Other")
+                          _buildTextField(
+                            label: "Custom Skill",
+                            hint: "Enter your skill",
+                            controller: _customSkillController,
+                          ),
+
+                        _buildNumericField(
+                          label: "Driving Experience",
+                          value: _experience,
+                          unit: "years",
+                          onIncrement: () => setState(() => _experience++),
+                          onDecrement: () => setState(
+                            () => _experience > 0 ? _experience-- : 0,
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Submit Button
+                        SizedBox(
+                          width: 200,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _register,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                4,
+                                63,
+                                111,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    "Save & REGISTER",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
