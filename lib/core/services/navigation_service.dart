@@ -11,6 +11,18 @@ import '../../features/dashboard/presentation/pages/labour_dashboard_page.dart';
 import '../../features/role/presentation/pages/farmer_registration_page.dart';
 import '../../features/role/presentation/pages/labour_registration_page.dart';
 import '../../features/role/presentation/pages/driver_registration_page.dart';
+import '../../features/dashboard/presentation/pages/drawer/contact.dart';
+import '../../features/dashboard/presentation/pages/drawer/learn.dart';
+import '../../features/dashboard/presentation/pages/drawer/my_products.dart';
+import '../../features/dashboard/presentation/pages/drawer/products.dart';
+import '../../features/dashboard/presentation/pages/drawer/promotions.dart';
+import '../../features/dashboard/presentation/pages/drawer/reports.dart';
+import '../../features/dashboard/presentation/pages/featurecard/cultivation.dart';
+import '../../features/dashboard/presentation/pages/featurecard/drivers.dart';
+import '../../features/dashboard/presentation/pages/featurecard/labors.dart';
+import '../../features/dashboard/presentation/pages/featurecard/market.dart';
+import '../../features/dashboard/presentation/pages/featurecard/stores.dart';
+import '../../features/dashboard/presentation/pages/featurecard/weather.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -72,6 +84,54 @@ class NavigationService {
         GoRoute(
           path: '/dashboard/labour',
           builder: (context, state) => const LabourDashboardPage(),
+        ),
+        GoRoute(
+          path: '/dashboard/contact',
+          builder: (context, state) => const ContactScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/learn',
+          builder: (context, state) => const LearnScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/myproducts',
+          builder: (context, state) => const MyProductsScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/products',
+          builder: (context, state) => const ProductsScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/promotions',
+          builder: (context, state) => const PromotionsScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/reports',
+          builder: (context, state) => const ReportsScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/cultivation',
+          builder: (context, state) => const CultivationScreen(products: []),
+        ),
+        GoRoute(
+          path: '/dashboard/labour',
+          builder: (context, state) => const DriversScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/labour',
+          builder: (context, state) => const LaborsScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/labour',
+          builder: (context, state) => const MarketScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/labour',
+          builder: (context, state) => const StoresScreen(),
+        ),
+        GoRoute(
+          path: '/dashboard/labour',
+          builder: (context, state) => const WeatherScreen(),
         ),
       ],
     );
