@@ -31,6 +31,7 @@ class PromotionsScreen extends StatelessWidget {
         title: const Text("Promotions", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF009688),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Padding(

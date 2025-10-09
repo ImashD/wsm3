@@ -54,6 +54,7 @@ class ProductsScreen extends StatelessWidget {
         ),
         backgroundColor: const Color(0xFF009688),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),

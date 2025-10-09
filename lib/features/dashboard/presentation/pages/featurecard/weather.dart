@@ -82,10 +82,11 @@ class _WeatherScreenState extends State<WeatherScreen> {
       appBar: AppBar(
         title: const Text(
           "Weather Forecast",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.teal),
         ),
-        backgroundColor: const Color(0xFF009688),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.teal),
+        centerTitle: true,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

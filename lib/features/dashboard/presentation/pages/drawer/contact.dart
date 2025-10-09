@@ -11,8 +11,11 @@ class ContactScreen extends StatelessWidget {
   final String mapUrl =
       "https://www.google.com/maps/dir//WRJW%2B7P3,+Colombo/@6.9306223,79.7644006,12z/data=!4m8!4m7!1m0!1m5!1m1!1s0x3ae2596cd00a22df:0xe41779524bbd4959!2m2!1d79.8468561!2d6.930649?entry=ttu&g_ep=EgoyMDI1MDkxNy4wIKXMDSoASAFQAw%3D%3D";
 
-  Future<void> _launchUrl(String url) async {
+  Future<void> _launchUrl(String url, {bool external = true}) async {
     final uri = Uri.parse(url);
+    final _ = external
+        ? LaunchMode.externalApplication
+        : LaunchMode.platformDefault;
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -23,10 +26,12 @@ class ContactScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFE0F2F1),
       appBar: AppBar(
         title: const Text("Contact Us", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF009688),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -34,6 +39,7 @@ class ContactScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Optional: Add logo image here
+            const SizedBox(height: 16),
             Container(
               margin: const EdgeInsets.only(bottom: 24),
               child: Image.asset(
@@ -51,6 +57,9 @@ class ContactScreen extends StatelessWidget {
 
             // Phone
             Card(
+              color: Colors.white,
+              elevation: 4,
+              shadowColor: Colors.teal.withOpacity(0.2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -68,6 +77,9 @@ class ContactScreen extends StatelessWidget {
 
             // Email
             Card(
+              color: Colors.white,
+              elevation: 4,
+              shadowColor: Colors.teal.withOpacity(0.2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -78,13 +90,16 @@ class ContactScreen extends StatelessWidget {
                   "\nTap to send email",
                   style: TextStyle(color: Colors.teal),
                 ),
-                onTap: () => _launchUrl("mailto:$email"),
+                onTap: () => _launchUrl("mailto:$email", external: false),
               ),
             ),
             const SizedBox(height: 12),
 
             // Address
             Card(
+              color: Colors.white,
+              elevation: 4,
+              shadowColor: Colors.teal.withOpacity(0.2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

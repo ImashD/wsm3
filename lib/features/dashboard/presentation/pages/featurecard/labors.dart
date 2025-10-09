@@ -1,5 +1,3 @@
-// labors.dart
-
 import 'package:flutter/material.dart';
 
 class LaborsScreen extends StatefulWidget {
@@ -21,11 +19,12 @@ class _LaborsScreenState extends State<LaborsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Request Drivers",
+          "Request Labors",
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: const Color(0xFF009688),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: Column(
         children: [
@@ -109,7 +108,7 @@ class _LaborsScreenState extends State<LaborsScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Special instructions (optional)
+                  // Special instructions
                   TextField(
                     controller: _instructionsController,
                     maxLines: 3,
@@ -123,106 +122,83 @@ class _LaborsScreenState extends State<LaborsScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Request button
-                  SizedBox(
-                    width: double.infinity,
+                  // Submit button
+                  Center(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF009688),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 14,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: () {
-                        if (_wageController.text.isEmpty ||
-                            _daysController.text.isEmpty ||
-                            _selectedDate == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Please fill all fields"),
-                            ),
-                          );
-                          return;
-                        }
-                        setState(() => _requestSent = true);
-                      },
+                      onPressed: _submitRequest,
                       child: const Text(
-                        "Request Labour",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
+                        "Send Request",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-
-                  // Mock labor confirmation
-                  if (_requestSent)
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      color: const Color(0xFF1DD1A1),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.person,
-                              size: 40,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Labors have been assigned!",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "Date: ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}\n"
-                                    "Wage: ${_wageController.text} LKR/day\n"
-                                    "Days: ${_daysController.text}\n"
-                                    "${_instructionsController.text.isNotEmpty ? "Notes: ${_instructionsController.text}" : ""}",
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                              ),
-                              onPressed: () {
-                                setState(() => _requestSent = false);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
-
-          // Bottom decorative image
-          SizedBox(
-            height: 150,
-            width: 150,
-            child: Image.asset("assets/labors.png", fit: BoxFit.cover),
-          ),
+          if (_requestSent)
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.green.shade100,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green),
+                  SizedBox(width: 10),
+                  Text(
+                    "Your labour request has been sent successfully!",
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  void _submitRequest() {
+    if (_selectedDate == null ||
+        _wageController.text.isEmpty ||
+        _daysController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please fill all required fields."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _requestSent = true;
+    });
+
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() => _requestSent = false);
+      _wageController.clear();
+      _daysController.clear();
+      _instructionsController.clear();
+      _selectedDate = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Labour request submitted successfully!"),
+        backgroundColor: Colors.green,
       ),
     );
   }

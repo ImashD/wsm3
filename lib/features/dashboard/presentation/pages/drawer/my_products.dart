@@ -366,6 +366,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         title: const Text("My Products", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF009688),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),

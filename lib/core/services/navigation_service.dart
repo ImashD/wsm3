@@ -11,18 +11,18 @@ import '../../features/dashboard/presentation/pages/labour_dashboard_page.dart';
 import '../../features/role/presentation/pages/farmer_registration_page.dart';
 import '../../features/role/presentation/pages/labour_registration_page.dart';
 import '../../features/role/presentation/pages/driver_registration_page.dart';
-import '../../features/dashboard/presentation/pages/drawer/contact.dart';
-import '../../features/dashboard/presentation/pages/drawer/learn.dart';
-import '../../features/dashboard/presentation/pages/drawer/my_products.dart';
-import '../../features/dashboard/presentation/pages/drawer/products.dart';
-import '../../features/dashboard/presentation/pages/drawer/promotions.dart';
-import '../../features/dashboard/presentation/pages/drawer/reports.dart';
-import '../../features/dashboard/presentation/pages/featurecard/cultivation.dart';
-import '../../features/dashboard/presentation/pages/featurecard/drivers.dart';
-import '../../features/dashboard/presentation/pages/featurecard/labors.dart';
-import '../../features/dashboard/presentation/pages/featurecard/market.dart';
-import '../../features/dashboard/presentation/pages/featurecard/stores.dart';
-import '../../features/dashboard/presentation/pages/featurecard/weather.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/drawer/contact.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/drawer/learn.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/drawer/my_products.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/drawer/products.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/drawer/reports.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/drawer/promotions.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/featurecard/cultivation.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/featurecard/drivers.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/featurecard/labors.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/featurecard/market.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/featurecard/stores.dart';
+import 'package:wsm3/features/dashboard/presentation/pages/featurecard/weather.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -86,51 +86,53 @@ class NavigationService {
           builder: (context, state) => const LabourDashboardPage(),
         ),
         GoRoute(
-          path: '/dashboard/contact',
+          path: '/contact',
           builder: (context, state) => const ContactScreen(),
         ),
         GoRoute(
-          path: '/dashboard/learn',
+          path: '/learn',
           builder: (context, state) => const LearnScreen(),
         ),
         GoRoute(
-          path: '/dashboard/myproducts',
+          path: '/myProducts',
           builder: (context, state) => const MyProductsScreen(),
         ),
         GoRoute(
-          path: '/dashboard/products',
+          path: '/products',
           builder: (context, state) => const ProductsScreen(),
         ),
         GoRoute(
-          path: '/dashboard/promotions',
+          path: '/promotions',
           builder: (context, state) => const PromotionsScreen(),
         ),
         GoRoute(
-          path: '/dashboard/reports',
+          path: '/reports',
           builder: (context, state) => const ReportsScreen(),
         ),
         GoRoute(
-          path: '/dashboard/cultivation',
+          path: '/cultivation',
           builder: (context, state) => const CultivationScreen(products: []),
         ),
         GoRoute(
-          path: '/dashboard/labour',
-          builder: (context, state) => const DriversScreen(),
-        ),
-        GoRoute(
-          path: '/dashboard/labour',
+          path: '/labors',
           builder: (context, state) => const LaborsScreen(),
         ),
         GoRoute(
-          path: '/dashboard/labour',
+          path: '/drivers',
+          builder: (context, state) => const DriversScreen(),
+        ),
+
+        GoRoute(
+          path: '/market',
           builder: (context, state) => const MarketScreen(),
         ),
+
         GoRoute(
-          path: '/dashboard/labour',
+          path: '/stores',
           builder: (context, state) => const StoresScreen(),
         ),
         GoRoute(
-          path: '/dashboard/labour',
+          path: '/weather',
           builder: (context, state) => const WeatherScreen(),
         ),
       ],

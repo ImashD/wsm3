@@ -86,6 +86,7 @@ class _StoresScreenState extends State<StoresScreen> {
         ),
         backgroundColor: const Color(0xFF009688),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: Stack(
         children: [

@@ -1,5 +1,3 @@
-// market.dart
-
 import 'package:flutter/material.dart';
 
 class MarketScreen extends StatefulWidget {
@@ -171,6 +169,7 @@ class _MarketScreenState extends State<MarketScreen> {
         ),
         backgroundColor: const Color(0xFF009688),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -199,82 +198,120 @@ class _MarketScreenState extends State<MarketScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
-            // Filters
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: selectedDistrict,
-                    items: districts
-                        .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                        .toList(),
-                    onChanged: (val) => setState(() => selectedDistrict = val!),
-                    decoration: const InputDecoration(
-                      labelText: "District",
-                      border: OutlineInputBorder(),
+            // Filter + Selection Card
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 4,
+              shadowColor: Colors.grey.withOpacity(0.3),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.filter_list, color: Colors.teal),
+                        SizedBox(width: 8),
+                        Text(
+                          "Filter Market Prices",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: selectedType,
-                    items: paddyTypes
-                        .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                        .toList(),
-                    onChanged: (val) => setState(() => selectedType = val!),
-                    decoration: const InputDecoration(
-                      labelText: "Paddy Type",
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedDistrict,
+                      items: districts
+                          .map(
+                            (d) => DropdownMenuItem(value: d, child: Text(d)),
+                          )
+                          .toList(),
+                      onChanged: (val) =>
+                          setState(() => selectedDistrict = val!),
+                      decoration: const InputDecoration(
+                        labelText: "Select District",
+                        border: OutlineInputBorder(),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: selectedMoisture,
-                    items: ["Dry", "Wet"]
-                        .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                        .toList(),
-                    onChanged: (val) => setState(() => selectedMoisture = val!),
-                    decoration: const InputDecoration(
-                      labelText: "Moisture",
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: selectedType,
+                            items: paddyTypes
+                                .map(
+                                  (t) => DropdownMenuItem(
+                                    value: t,
+                                    child: Text(t),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (val) =>
+                                setState(() => selectedType = val!),
+                            decoration: const InputDecoration(
+                              labelText: "Paddy Type",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: selectedMoisture,
+                            items: ["Dry", "Wet"]
+                                .map(
+                                  (m) => DropdownMenuItem(
+                                    value: m,
+                                    child: Text(m),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (val) =>
+                                setState(() => selectedMoisture = val!),
+                            decoration: const InputDecoration(
+                              labelText: "Moisture",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+                    const SizedBox(height: 10),
 
+                    if (filtered.isEmpty)
+                      const Card(
+                        color: Color(0xFFF5F5F5),
+                        child: ListTile(title: Text("No data available")),
+                      )
+                    else
+                      ...filtered.map((item) => _highlightCard(item)).toList(),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Other Market Prices
             Expanded(
               child: ListView(
                 children: [
-                  // 🎯 Highlighted selection
                   const Text(
-                    "🎯 Your Selection",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  if (filtered.isEmpty)
-                    const Card(
-                      child: ListTile(title: Text("No data available")),
-                    )
-                  else
-                    ...filtered.map((item) => _highlightCard(item)).toList(),
-
-                  const SizedBox(height: 16),
-
-                  // 📊 Grouped other market prices
-                  const Text(
-                    "📊 All Other Market Prices",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    "All Other Market Prices 📊 ",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ..._groupByDistrict(others).entries.map((entry) {
@@ -305,7 +342,7 @@ class _MarketScreenState extends State<MarketScreen> {
     return Card(
       color: const Color(0xFFE8F5E9),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 5,
+      elevation: 3,
       child: ListTile(
         leading: const Icon(Icons.grain, color: Colors.teal, size: 30),
         title: Text(

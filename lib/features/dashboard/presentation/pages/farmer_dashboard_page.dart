@@ -133,6 +133,7 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
                     "assets/labors.png",
                     "/labors",
                   ),
+
                   _featureCard(
                     context,
                     "Request Drivers",
@@ -271,7 +272,7 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
       title: Text(text),
       onTap: () {
         if (route is String) {
-          GoRouter.of(context).go(route);
+          GoRouter.of(context).push(route);
         } else if (route is VoidCallback) {
           route();
         }
@@ -286,7 +287,7 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
     String route,
   ) {
     return GestureDetector(
-      onTap: () => GoRouter.of(context).go(route),
+      onTap: () => GoRouter.of(context).push(route),
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF009688),
@@ -454,7 +455,6 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
                 ),
               ),
             );
-            ;
           },
         );
       },
@@ -465,16 +465,68 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
   void _showRateDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Rate Us"),
-        content: const Text("This is a placeholder for the rate dialog."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("OK"),
+      builder: (ctx) {
+        int selectedStars = 0;
+        return StatefulBuilder(
+          builder: (ctx, setState) => AlertDialog(
+            title: const Text(
+              "Rate Our App",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children:
+                  List.generate(5, (index) {
+                        return GestureDetector(
+                          onTap: () =>
+                              setState(() => selectedStars = index + 1),
+                          child: Icon(
+                            index < selectedStars
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: Colors.amber,
+                            size: 32,
+                          ),
+                        );
+                      })
+                      .map(
+                        (widget) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: widget,
+                        ),
+                      )
+                      .toList(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  "Cancel",
+                  style: TextStyle(color: Colors.teal),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF009688),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Thanks for rating $selectedStars stars!"),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Submit",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

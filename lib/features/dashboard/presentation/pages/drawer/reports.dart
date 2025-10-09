@@ -101,6 +101,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ),
         backgroundColor: const Color(0xFF009688),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: Column(
         children: [
