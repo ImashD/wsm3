@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:go_router/go_router.dart';
-import 'package:wsm3/core/services/auth_service.dart'; // ✅ Change 'your_app_name' to your actual package name
+import 'package:wsm3/core/services/auth_service.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -23,17 +23,14 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    // Start animations
     _startAnimations();
 
-    // Wait until the first frame is rendered before checking auth
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAuthStatus();
     });
   }
 
   void _startAnimations() {
-    // Logo bounce animation
     _logoController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2500),
@@ -70,7 +67,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       ),
     ]).animate(_logoController);
 
-    // Logo fade-in
     _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _logoController,
@@ -80,12 +76,10 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
     _logoController.forward();
 
-    // Tagline fade-in after logo animation
     _taglineController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-
     _taglineFade = CurvedAnimation(
       parent: _taglineController,
       curve: Curves.easeIn,
@@ -97,19 +91,17 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   }
 
   Future<void> _checkAuthStatus() async {
-    // Give splash time to display first
-    await Future.delayed(const Duration(seconds: 1));
-
     final authService = AuthService();
     await authService.init();
 
     final isFirstTime = await authService.isFirstTime();
     final isAuthenticated = await authService.isAuthenticated();
 
+    print('isFirstTime: $isFirstTime, isAuthenticated: $isAuthenticated');
+
     if (!mounted) return;
 
-    // Wait for splash + animations (~6s total)
-    await Future.delayed(const Duration(seconds: 5));
+    await Future.delayed(const Duration(seconds: 5)); // splash + animations
 
     if (isFirstTime) {
       context.go('/onboarding');
@@ -143,7 +135,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo bounce and fade-in
               AnimatedBuilder(
                 animation: _logoController,
                 builder: (context, child) {
@@ -158,8 +149,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 child: Image.asset("assets/logo.png", height: 100),
               ),
               const SizedBox(height: 24),
-
-              // App title typing animation
               DefaultTextStyle(
                 style: const TextStyle(
                   fontSize: 34,
@@ -181,8 +170,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Tagline fade-in
               FadeTransition(
                 opacity: _taglineFade,
                 child: const Text(

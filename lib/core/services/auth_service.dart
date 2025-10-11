@@ -1,47 +1,69 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum UserRole { farmer, driver, labour }
 
 class AuthService {
-  static const String _tokenKey = 'auth_token';
   static const String _roleKey = 'user_role';
+  static const String _tokenKey = 'auth_token';
+
   static final AuthService _instance = AuthService._internal();
   late SharedPreferences _prefs;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  factory AuthService() {
-    return _instance;
-  }
-
+  factory AuthService() => _instance;
   AuthService._internal();
 
+  bool _initialized = false;
+
   Future<void> init() async {
-    _prefs = await SharedPreferences.getInstance();
+    if (!_initialized) {
+      _prefs = await SharedPreferences.getInstance();
+      _initialized = true;
+    }
   }
 
   Future<bool> isFirstTime() async {
-    return !(_prefs.getBool('not_first_time') ?? false);
+    _prefs = _prefs;
+    return _prefs.getBool('first_time') ?? true;
   }
 
   Future<void> setNotFirstTime() async {
-    await _prefs.setBool('not_first_time', true);
+    _prefs = _prefs;
+    await _prefs.setBool('first_time', false);
   }
 
+  String _mapUsernameToEmail(String username) => '$username@myapp.com';
+
   Future<bool> isAuthenticated() async {
-    final token = _prefs.getString(_tokenKey);
-    return token != null;
+    return _auth.currentUser != null;
   }
 
   Future<void> signIn(String username, String password) async {
-    // TODO: Implement actual authentication logic
-    await _prefs.setString(_tokenKey, 'dummy_token');
+    final email = _mapUsernameToEmail(username);
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      await _prefs.setString(_tokenKey, _auth.currentUser!.uid);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.message);
+    }
   }
 
   Future<void> signUp(String username, String password) async {
-    // TODO: Implement actual sign up logic
-    await _prefs.setString(_tokenKey, 'dummy_token');
+    final email = _mapUsernameToEmail(username);
+    try {
+      await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      await _prefs.setString(_tokenKey, _auth.currentUser!.uid);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.message);
+    }
   }
 
   Future<void> signOut() async {
+    await _auth.signOut();
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_roleKey);
   }

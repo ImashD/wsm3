@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/services/auth_service.dart';
+import 'package:wsm3/core/services/auth_service.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -50,6 +50,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Future<void> _finishOnboarding() async {
     final authService = AuthService();
+    await authService.init();
     await authService.setNotFirstTime();
     if (!mounted) return;
     context.go('/signup');
@@ -68,14 +69,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
         },
         itemBuilder: (context, index) {
           final content = _contents[index];
-
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Background image
               Image.asset(content.image, fit: BoxFit.cover),
-
-              // Gradient overlay
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -89,8 +86,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                 ),
               ),
-
-              // Skip button
               Positioned(
                 top: 16,
                 right: 16,
@@ -108,8 +103,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       )
                     : const SizedBox.shrink(),
               ),
-
-              // Title and subtitle
               Positioned(
                 left: 24,
                 right: 24,
@@ -138,8 +131,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ],
                 ),
               ),
-
-              // Bottom navigation (dots + button)
               Positioned(
                 bottom: 40,
                 left: 24,
@@ -147,7 +138,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Dots
                     Row(
                       children: List.generate(
                         _contents.length,
@@ -165,8 +155,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         ),
                       ),
                     ),
-
-                    // Next / Done button
                     ElevatedButton(
                       onPressed: _onNextPressed,
                       style: ElevatedButton.styleFrom(

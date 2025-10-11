@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/auth/presentation/pages/sign_in_page.dart';
 import '../../features/auth/presentation/pages/sign_up_page.dart';
-import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/role/presentation/pages/role_selection_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/dashboard/presentation/pages/farmer_dashboard_page.dart';
@@ -38,10 +38,7 @@ class NavigationService {
       navigatorKey: _rootNavigatorKey,
       initialLocation: '/splash',
       routes: [
-        GoRoute(
-          path: '/splash',
-          builder: (context, state) => const SplashPage(),
-        ),
+        GoRoute(path: '/', builder: (context, state) => const SplashPage()),
         GoRoute(
           path: '/onboarding',
           builder: (context, state) => const OnboardingPage(),
