@@ -12,10 +12,10 @@ class DriversScreen extends StatefulWidget {
 class _DriversScreenState extends State<DriversScreen> {
   final TextEditingController _pickupController = TextEditingController();
   final TextEditingController _dropoffController = TextEditingController();
-  final TextEditingController _capacityController = TextEditingController();
   bool _isNow = true; // immediate or scheduled
   bool _requestSent = false; // mock driver accepted
   DateTime? _scheduledDateTime;
+  int _quantity = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -46,23 +46,69 @@ class _DriversScreenState extends State<DriversScreen> {
                       color: Color(0xFF1DD1A1),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 26),
 
                   // Capacity
-                  TextField(
-                    controller: _capacityController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.production_quantity_limits),
-                      hintText: "Paddy quantity (in MT)",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                  const Text(
+                    "Paddy Quantity (in MT)",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    height: 55,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 220, 255, 247),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.teal.shade300),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove, color: Colors.teal),
+                          onPressed: () {
+                            setState(() {
+                              if (_quantity > 0) _quantity--;
+                            });
+                          },
+                        ),
+                        Text(
+                          '$_quantity MT',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add, color: Colors.teal),
+                          onPressed: () {
+                            setState(() {
+                              _quantity++;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 26),
 
                   // Pickup location (map picker)
+                  const Text(
+                    "Pickup Location",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   TextField(
                     controller: _pickupController,
                     readOnly: true,
@@ -90,15 +136,24 @@ class _DriversScreenState extends State<DriversScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 26),
 
                   // Drop-off location (map picker)
+                  const Text(
+                    "Drop-off Location",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   TextField(
                     controller: _dropoffController,
                     readOnly: true,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.flag),
-                      hintText: "Select Drop-off location",
+                      hintText: "Select Location",
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -120,7 +175,7 @@ class _DriversScreenState extends State<DriversScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 26),
 
                   // Immediate or scheduled
                   Row(
@@ -215,7 +270,7 @@ class _DriversScreenState extends State<DriversScreen> {
                         ),
                       ),
                       onPressed: () {
-                        if (_capacityController.text.isEmpty ||
+                        if (_quantity <= 0 ||
                             _pickupController.text.isEmpty ||
                             _dropoffController.text.isEmpty ||
                             (!_isNow && _scheduledDateTime == null)) {
@@ -230,7 +285,7 @@ class _DriversScreenState extends State<DriversScreen> {
                       },
                       child: const Text(
                         "Request Driver",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ),
                   ),
@@ -295,13 +350,6 @@ class _DriversScreenState extends State<DriversScreen> {
                 ],
               ),
             ),
-          ),
-
-          // Bottom decorative image
-          SizedBox(
-            height: 150,
-            width: 150,
-            child: Image.asset("assets/drivers.png", fit: BoxFit.cover),
           ),
         ],
       ),

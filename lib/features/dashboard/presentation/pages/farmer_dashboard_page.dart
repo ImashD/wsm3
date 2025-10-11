@@ -215,13 +215,13 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
+                const SizedBox(height: 10),
                 _drawerItem(
                   Icons.edit,
                   "Edit Profile",
                   "/role-registration/farmer/step1",
                 ),
                 _drawerItem(Icons.grass, "Product List", "/products"),
-                _drawerItem(Icons.inventory, "My Products", "/myProducts"),
                 _drawerItem(Icons.bar_chart, "Sales Reports", "/reports"),
                 _drawerItem(Icons.campaign, "Promotions", "/promotions"),
                 _drawerItem(
@@ -534,16 +534,58 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
   void _showQrCodeDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("My QR Code"),
-        content: const Text("This is a placeholder for the QR code dialog."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Close"),
+      builder: (ctx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
-      ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Your QR Code",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Image.asset("assets/sample_qr.png", height: 180, width: 180),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.download, color: Colors.white),
+                  label: const Text(
+                    "Download Here",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF009688),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("QR Code downloaded!")),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF76E2C6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    "Close",
+                    style: TextStyle(color: Colors.black),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -3,84 +3,364 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CultivationScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> products;
-
-  const CultivationScreen({super.key, required this.products});
+  const CultivationScreen({super.key});
 
   @override
   State<CultivationScreen> createState() => _CultivationScreenState();
 }
 
 class _CultivationScreenState extends State<CultivationScreen> {
-  final ImagePicker _picker = ImagePicker();
-  Map<String, dynamic>? _selectedProduct;
-  List<File> _fieldImages = [];
+  List<Map<String, dynamic>> products = [
+    {
+      "name": "Samba",
+      "quantity": "120",
+      "price": "120",
+      "area": "2 acres",
+      "harvestDate": "15-Aug-2025",
+      "status": "Available",
+      "image": "assets/samba.png",
+      "isAsset": true,
+    },
+    {
+      "name": "Naadu (Red)",
+      "quantity": "80",
+      "price": "100",
+      "area": "3 acres",
+      "harvestDate": "05-Jul-2025",
+      "status": "Sold Out",
+      "image": "assets/red_naadu.png",
+      "isAsset": true,
+    },
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedProduct = widget.products.firstWhere(
-      (prod) => prod['status'] == 'Growing' || prod['status'] == 'Available',
-      orElse: () => {},
+  final ImagePicker _picker = ImagePicker();
+
+  void _addOrEditProduct({Map<String, dynamic>? product, int? index}) {
+    final nameController = TextEditingController(text: product?["name"] ?? "");
+    final quantityController = TextEditingController(
+      text: product?["quantity"] ?? "",
+    );
+    final priceController = TextEditingController(
+      text: product?["price"] ?? "",
+    );
+    final areaController = TextEditingController(text: product?["area"] ?? "");
+    final harvestDateController = TextEditingController(
+      text: product?["harvestDate"] ?? "",
+    );
+    String status = product?["status"] ?? "Available";
+    File? selectedImage;
+
+    String? assetImage = (product != null && product["isAsset"] == true)
+        ? product["image"]
+        : null;
+
+    final scrollController = ScrollController();
+
+    // FocusNodes for automatic scrolling
+    final nameFocus = FocusNode();
+    final quantityFocus = FocusNode();
+    final priceFocus = FocusNode();
+    final areaFocus = FocusNode();
+    final harvestFocus = FocusNode();
+
+    void scrollToFocus(FocusNode node) {
+      node.addListener(() {
+        if (node.hasFocus) {
+          // Scroll slightly above the field
+          scrollController.animateTo(
+            scrollController.position.pixels + 80,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+
+    scrollToFocus(nameFocus);
+    scrollToFocus(quantityFocus);
+    scrollToFocus(priceFocus);
+    scrollToFocus(areaFocus);
+    scrollToFocus(harvestFocus);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(product == null ? "Add Product" : "Edit Product"),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Image with edit pen
+                      GestureDetector(
+                        onTap: () async {
+                          final pickedFile = await _picker.pickImage(
+                            source: ImageSource.gallery,
+                          );
+                          if (pickedFile != null) {
+                            setStateDialog(() {
+                              selectedImage = File(pickedFile.path);
+                              assetImage = null;
+                            });
+                          }
+                        },
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: selectedImage != null
+                                  ? Image.file(
+                                      selectedImage!,
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : (assetImage != null
+                                        ? Image.asset(
+                                            assetImage!,
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            width: 100,
+                                            height: 100,
+                                            color: Colors.grey[200],
+                                            child: const Icon(
+                                              Icons.image,
+                                              size: 40,
+                                              color: Colors.teal,
+                                            ),
+                                          )),
+                            ),
+                            Container(
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.teal,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Name field
+                      TextField(
+                        controller: nameController,
+                        focusNode: nameFocus,
+                        decoration: const InputDecoration(
+                          labelText: "Name",
+                          labelStyle: TextStyle(color: Colors.teal),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Quantity
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: quantityController,
+                              focusNode: quantityFocus,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: "Quantity",
+                                labelStyle: TextStyle(color: Colors.teal),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text("kg"),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Price
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: priceController,
+                              focusNode: priceFocus,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: "Price",
+                                labelStyle: TextStyle(color: Colors.teal),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text("Rs/kg"),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Area
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: areaController,
+                              focusNode: areaFocus,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: "Area",
+                                labelStyle: TextStyle(color: Colors.teal),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text("Acres"),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Harvest Date
+                      TextField(
+                        controller: harvestDateController,
+                        focusNode: harvestFocus,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: "Harvest Date",
+                          labelStyle: const TextStyle(color: Colors.teal),
+                          suffixIcon: const Icon(
+                            Icons.calendar_today,
+                            color: Colors.teal,
+                          ),
+                        ),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2035),
+                          );
+                          if (picked != null) {
+                            setStateDialog(() {
+                              harvestDateController.text =
+                                  "${picked.day}-${picked.month}-${picked.year}";
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Status
+                      DropdownButtonFormField<String>(
+                        value: status,
+                        items: ["Available", "Sold Out"].map((status) {
+                          return DropdownMenuItem(
+                            value: status,
+                            child: Text(status),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setStateDialog(() {
+                            status = value!;
+                          });
+                        },
+                        decoration: const InputDecoration(
+                          labelText: "Status",
+                          labelStyle: TextStyle(color: Colors.teal),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF009688),
+                  ),
+                  child: const Text("Cancel"),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF009688),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("Save"),
+                  onPressed: () {
+                    final newProduct = {
+                      "name": nameController.text,
+                      "quantity": quantityController.text,
+                      "price": priceController.text,
+                      "area": areaController.text,
+                      "harvestDate": harvestDateController.text,
+                      "status": status,
+                      "image":
+                          selectedImage?.path ??
+                          assetImage ??
+                          "assets/default.png",
+                      "isAsset": selectedImage == null,
+                    };
+
+                    setState(() {
+                      if (index != null) {
+                        products[index] = newProduct;
+                      } else {
+                        products.add(newProduct);
+                      }
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  Future<void> _addFieldImages() async {
-    final pickedFiles = await _picker.pickMultiImage();
-    if (pickedFiles.isNotEmpty) {
-      setState(() {
-        _fieldImages.addAll(pickedFiles.map((file) => File(file.path)));
-      });
-    }
-  }
-
-  Widget _infoCard(IconData icon, String label, String value, {Color? color}) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        margin: const EdgeInsets.only(right: 8),
-        decoration: BoxDecoration(
-          color: color ?? Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade300,
-              blurRadius: 4,
-              offset: const Offset(2, 2),
+  void _deleteProduct(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Product"),
+        content: const Text("Are you sure you want to delete this product?"),
+        actions: [
+          TextButton(
+            child: const Text("Cancel", style: TextStyle(color: Colors.black)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 28, color: Colors.teal),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade800),
-            ),
-          ],
-        ),
+            child: const Text("Delete"),
+            onPressed: () {
+              setState(() {
+                products.removeAt(index);
+              });
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedProduct == null || _selectedProduct!.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text("Cultivation Info"),
-          backgroundColor: const Color(0xFF1DD1A1),
-        ),
-        body: const Center(child: Text("No ongoing cultivation found.")),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -89,157 +369,111 @@ class _CultivationScreenState extends State<CultivationScreen> {
         ),
         backgroundColor: const Color(0xFF009688),
         iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.teal.shade50, Colors.teal.shade100],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Main Info Card
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 6,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Paddy Type: ${_selectedProduct!['name']}",
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Highlighted Next Harvest
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade400,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          "Next Expected Harvest: ${_selectedProduct!['harvestDate']}",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          final product = products[index];
+          return Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 4,
+            margin: const EdgeInsets.only(bottom: 20),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: product["isAsset"] == true
+                        ? Image.asset(
+                            product["image"],
+                            width: 80,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.file(
+                            File(product["image"]),
+                            width: 80,
+                            height: 100,
+                            fit: BoxFit.cover,
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Info Cards Row
-                      Row(
-                        children: [
-                          _infoCard(
-                            Icons.terrain,
-                            "Area",
-                            "${_selectedProduct!['area']}",
-                          ),
-                          _infoCard(
-                            Icons.line_weight,
-                            "Quantity",
-                            "${_selectedProduct!['quantity']} kg",
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _infoCard(
-                            Icons.info,
-                            "Status",
-                            _selectedProduct!['status'],
-                          ),
-                          _infoCard(
-                            Icons.calendar_today,
-                            "Harvest Date",
-                            "${_selectedProduct!['harvestDate']}",
-                          ),
-                        ],
-                      ),
-                    ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Cultivation Images Section
-              Text(
-                "Cultivation Process Images:",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal.shade800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              _fieldImages.isEmpty
-                  ? const Center(
-                      child: Text(
-                        "No images added yet",
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                    )
-                  : SizedBox(
-                      height: 150,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _fieldImages.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                _fieldImages[index],
-                                width: 150,
-                                height: 150,
-                                fit: BoxFit.cover,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              product["name"],
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          );
-                        },
-                      ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: product["status"] == "Available"
+                                    ? Colors.green
+                                    : Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                product["status"],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text("Qty: ${product["quantity"]} kg"),
+                        Text("Price: Rs. ${product["price"]}/kg"),
+                        Text("Area: ${product["area"]}"),
+                        Text("Harvest: ${product["harvestDate"]}"),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.teal),
+                              onPressed: () => _addOrEditProduct(
+                                product: product,
+                                index: index,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteProduct(index),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-              const SizedBox(height: 16),
-
-              // Add/Update Images Button
-              Center(
-                child: ElevatedButton.icon(
-                  onPressed: _addFieldImages,
-                  icon: const Icon(Icons.add_a_photo),
-                  label: const Text("Add/Update Images"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1DD1A1),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 20,
-                    ),
-                    textStyle: const TextStyle(fontSize: 16),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _addOrEditProduct(),
+        backgroundColor: const Color(0xFF009688),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

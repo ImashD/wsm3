@@ -13,7 +13,6 @@ import '../../features/role/presentation/pages/labour_registration_page.dart';
 import '../../features/role/presentation/pages/driver_registration_page.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/drawer/contact.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/drawer/learn.dart';
-import 'package:wsm3/features/dashboard/presentation/pages/drawer/my_products.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/drawer/products.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/drawer/reports.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/drawer/promotions.dart';
@@ -94,8 +93,8 @@ class NavigationService {
           builder: (context, state) => const LearnScreen(),
         ),
         GoRoute(
-          path: '/myProducts',
-          builder: (context, state) => const MyProductsScreen(),
+          path: '/cultivation',
+          builder: (context, state) => const CultivationScreen(),
         ),
         GoRoute(
           path: '/products',
@@ -109,10 +108,7 @@ class NavigationService {
           path: '/reports',
           builder: (context, state) => const ReportsScreen(),
         ),
-        GoRoute(
-          path: '/cultivation',
-          builder: (context, state) => const CultivationScreen(products: []),
-        ),
+
         GoRoute(
           path: '/labors',
           builder: (context, state) => const LaborsScreen(),

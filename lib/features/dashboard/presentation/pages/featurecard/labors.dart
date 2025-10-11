@@ -13,6 +13,7 @@ class _LaborsScreenState extends State<LaborsScreen> {
   final TextEditingController _instructionsController = TextEditingController();
   DateTime? _selectedDate;
   bool _requestSent = false;
+  int _numOfDays = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +43,7 @@ class _LaborsScreenState extends State<LaborsScreen> {
                       color: Color(0xFF1DD1A1),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 15),
 
                   // Date picker
                   Row(
@@ -68,7 +69,7 @@ class _LaborsScreenState extends State<LaborsScreen> {
                         },
                         child: Text(
                           _selectedDate == null
-                              ? "Pick the date to begin labour work"
+                              ? "Click here to pick the date to begin work"
                               : "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
                           style: const TextStyle(
                             fontSize: 16,
@@ -78,9 +79,18 @@ class _LaborsScreenState extends State<LaborsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 18),
 
                   // Wage per day
+                  const Text(
+                    "Wage per day ",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   TextField(
                     controller: _wageController,
                     keyboardType: TextInputType.number,
@@ -92,23 +102,70 @@ class _LaborsScreenState extends State<LaborsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 26),
 
                   // Number of days
-                  TextField(
-                    controller: _daysController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.schedule),
-                      hintText: "Number of days",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                  const Text(
+                    "Number of days",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    height: 55,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 220, 255, 247),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.teal.shade300),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove, color: Colors.teal),
+                          onPressed: () {
+                            setState(() {
+                              if (_numOfDays > 0) _numOfDays--;
+                            });
+                          },
+                        ),
+                        Text(
+                          '$_numOfDays days',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add, color: Colors.teal),
+                          onPressed: () {
+                            setState(() {
+                              _numOfDays++;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 26),
 
                   // Special instructions
+                  const Text(
+                    "Special Instructions",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
                   TextField(
                     controller: _instructionsController,
                     maxLines: 3,
@@ -120,7 +177,7 @@ class _LaborsScreenState extends State<LaborsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 26),
 
                   // Submit button
                   Center(
@@ -128,7 +185,7 @@ class _LaborsScreenState extends State<LaborsScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF009688),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
+                          horizontal: 120,
                           vertical: 14,
                         ),
                         shape: RoundedRectangleBorder(
@@ -173,7 +230,7 @@ class _LaborsScreenState extends State<LaborsScreen> {
   void _submitRequest() {
     if (_selectedDate == null ||
         _wageController.text.isEmpty ||
-        _daysController.text.isEmpty) {
+        _numOfDays <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Please fill all required fields."),
