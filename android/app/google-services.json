@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "914285097439",
+    "project_id": "wsm3-app",
+    "storage_bucket": "wsm3-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:914285097439:android:909c892022a091e5ccd46a",
+        "android_client_info": {
+          "package_name": "com.example.wsm3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBX7603GKW6STLrsjFF8gbVf4v3NEpk-a0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
