@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'job_screen.dart';
+import '../../../../core/services/auth_service.dart';
 
 class LabourDashboardPage extends StatefulWidget {
   const LabourDashboardPage({super.key});
@@ -14,7 +16,38 @@ class LabourDashboardPage extends StatefulWidget {
 class _LabourDashboardPageState extends State<LabourDashboardPage> {
   final ImagePicker _picker = ImagePicker();
   File? _profileImage;
+  String? _profileImageUrl;
   bool _isAvailable = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage();
+  }
+
+  Future<void> _pickProfileImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+
+      // Optional: upload to Firebase Storage
+      final uid = AuthService().getCurrentUserId();
+      if (uid != null) {
+        final ref = FirebaseStorage.instance.ref().child(
+          'labour_profile_images/$uid.jpg',
+        );
+        await ref.putFile(_profileImage!);
+        final url = await ref.getDownloadURL();
+        setState(() {
+          _profileImageUrl = url;
+        });
+      }
+    }
+  }
+
+  // Pick profile image from gallery
 
   final List<Map<String, String>> _jobRequests = [
     {
@@ -58,6 +91,29 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
     setState(() {
       _jobRequests.removeAt(index);
     });
+  }
+
+  /// Fetch profile image from Firebase Storage
+  Future<void> _loadProfileImage() async {
+    final uid = AuthService().getCurrentUserId();
+    if (uid == null) return;
+
+    try {
+      final url = await FirebaseStorage.instance
+          .ref('labour_profile_images/$uid.jpg')
+          .getDownloadURL();
+      setState(() {
+        _profileImageUrl = url;
+      });
+    } catch (e) {
+      // No image uploaded yet
+      _profileImageUrl = null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchLabourDetails() async {
+    final data = await AuthService().getUserData();
+    return data?['labourDetails'];
   }
 
   @override
@@ -397,123 +453,131 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
   }
 
   // Profile Dialog with edit (pen) icon
+  // Profile dialog
   void _showProfileDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
-            Future<void> _pickProfileImage() async {
-              final pickedFile = await _picker.pickImage(
-                source: ImageSource.gallery,
-              );
-              if (pickedFile != null) {
-                setState(() => _profileImage = File(pickedFile.path));
-                setDialogState(() => _profileImage = File(pickedFile.path));
-              }
-            }
-
             return Dialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Top Row: Pen (edit) on left, Close on right
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            context.push(
-                              '/labour-registration',
-                            ); // navigate to edit profile
-                          },
-                          child: const Icon(
-                            Icons.edit,
-                            color: Color(0xFF00ACC1),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.pop(ctx),
-                          child: const Icon(Icons.close, color: Colors.black),
-                        ),
-                      ],
-                    ),
+                child: FutureBuilder<Map<String, dynamic>?>(
+                  future: fetchLabourDetails(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return SizedBox(
+                        height: 200,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final labour = snapshot.data;
 
-                    const SizedBox(height: 8),
-
-                    // Profile Avatar
-                    Stack(
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircleAvatar(
-                          radius: 45,
-                          backgroundColor: const Color(0xFF80DEEA),
-                          backgroundImage: _profileImage != null
-                              ? FileImage(_profileImage!)
-                              : null,
-                          child: _profileImage == null
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Colors.black,
-                                )
-                              : null,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: _pickProfileImage,
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF00BCD4),
-                                shape: BoxShape.circle,
-                              ),
-                              padding: const EdgeInsets.all(4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                context.push('/role-registration/labour');
+                              },
                               child: const Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 18,
+                                Icons.edit,
+                                color: Color(0xFF00ACC1),
                               ),
                             ),
+                            GestureDetector(
+                              onTap: () => Navigator.pop(ctx),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 45,
+                              backgroundColor: const Color(0xFF80DEEA),
+                              backgroundImage: _profileImage != null
+                                  ? FileImage(_profileImage!)
+                                  : (_profileImageUrl != null
+                                            ? NetworkImage(_profileImageUrl!)
+                                            : null)
+                                        as ImageProvider?,
+                              child:
+                                  (_profileImage == null &&
+                                      _profileImageUrl == null)
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: Colors.black,
+                                    )
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: _pickProfileImage,
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF00BCD4),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  padding: const EdgeInsets.all(4),
+                                  child: const Icon(
+                                    Icons.add,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          labour?['name'] ?? "Labour Name",
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Speciality: ${labour?['skill'] ?? "General Farm Work"}",
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Contact: ${labour?['phone'] ?? "+94 77 123 4567"}",
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00ACC1),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            context.go('/role-selection');
+                          },
+                          child: const Text(
+                            "Switch Role",
+                            style: TextStyle(color: Colors.white),
                           ),
                         ),
                       ],
-                    ),
-
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Labour Name",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text("Speciality: General Farm Work"),
-                    const SizedBox(height: 4),
-                    const Text("Contact: +94 77 123 4567"),
-                    const SizedBox(height: 16),
-
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00ACC1),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.go('/role-selection');
-                      },
-                      child: const Text(
-                        "Switch Role",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             );

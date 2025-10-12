@@ -38,7 +38,10 @@ class NavigationService {
       navigatorKey: _rootNavigatorKey,
       initialLocation: '/splash',
       routes: [
-        GoRoute(path: '/', builder: (context, state) => const SplashPage()),
+        GoRoute(
+          path: '/splash',
+          builder: (context, state) => const SplashPage(),
+        ),
         GoRoute(
           path: '/onboarding',
           builder: (context, state) => const OnboardingPage(),

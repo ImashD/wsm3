@@ -211,22 +211,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
               ),
             ),
           ),
-          Positioned(
-            top: 38,
-            left: 16,
-            child: Material(
-              elevation: 4,
-              shape: const CircleBorder(),
-              color: Colors.transparent,
-              child: CircleAvatar(
-                backgroundColor: Colors.black.withOpacity(0.3),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

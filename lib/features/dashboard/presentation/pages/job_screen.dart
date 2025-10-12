@@ -10,7 +10,7 @@ class LabourJobScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("My Jobs", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF00BCD4),
+        backgroundColor: const Color(0xFF00ACC1),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),

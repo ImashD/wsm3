@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../../../core/services/auth_service.dart';
 
 class DriverRegistrationPage extends StatefulWidget {
@@ -76,6 +78,14 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
     );
   }
 
+  Future<String> _uploadLicenseImage() async {
+    if (_licenseImage == null) return "";
+    final fileName = "licenses/${DateTime.now().millisecondsSinceEpoch}.png";
+    final ref = FirebaseStorage.instance.ref().child(fileName);
+    await ref.putFile(_licenseImage!);
+    return await ref.getDownloadURL();
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     if (_licenseImage == null) {
@@ -86,11 +96,31 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
 
     try {
+      final licenseUrl = await _uploadLicenseImage();
       final authService = AuthService();
-      await authService.registerRole(UserRole.driver);
+      final userId = authService.getCurrentUserId();
+      if (userId == null) throw Exception("User not signed in");
+
+      // Then register role separately
+      await authService.registerRole(UserRole.driver, {
+        'name': _nameController.text.trim(),
+        'nic': _nicController.text.trim(),
+        'experience': _experience,
+        'licenseUrl': licenseUrl,
+      });
+
+      // Save driver data to Firestore
+      await FirebaseFirestore.instance.collection('drivers').doc(userId).set({
+        'name': _nameController.text.trim(),
+        'nic': _nicController.text.trim(),
+        'experience': _experience,
+        'licenseUrl': licenseUrl,
+        'userId': userId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
       await authService.setUserRole(UserRole.driver);
 
       if (!mounted) return;
@@ -104,7 +134,7 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -137,19 +167,17 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
               if (value == null || value.isEmpty) {
                 return "Please enter $label";
               }
-
               if (label == "Full Name") {
                 final nameReg = RegExp(r'^[A-Za-z ]+$');
                 if (!nameReg.hasMatch(value)) {
                   return "Name must contain only English letters";
                 }
               }
-
               if (label == "N.I.C") {
                 final oldNIC = RegExp(r'^[0-9]{9}[vV]$');
                 final newNIC = RegExp(r'^[0-9]{12}$');
                 if (!oldNIC.hasMatch(value) && !newNIC.hasMatch(value)) {
-                  return "Invalid NIC format (e.g., 123456789V or 200012345678)";
+                  return "Invalid NIC format";
                 }
               }
               return null;
@@ -277,7 +305,6 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Stack(
               children: [
                 Container(height: 160, color: const Color(0xFFFF9800)),
@@ -327,8 +354,6 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
                 ),
               ],
             ),
-
-            // Form Section
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(20),

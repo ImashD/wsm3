@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'trips_screen.dart';
 
 class DriverDashboardPage extends StatefulWidget {
@@ -15,57 +16,50 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
   final ImagePicker _picker = ImagePicker();
   File? _profileImage;
   bool _isAvailable = true;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String driverId = "CURRENT_DRIVER_ID"; // replace with actual driver UID
 
-  final List<Map<String, String>> _tripRequests = [
-    {
-      "farmer": "Sunil Perera",
-      "capacity": "1500 kg",
-      "pickup": "Kurunegala",
-      "dropoff": "Colombo Rice Mill",
-      "date": "2025-09-12",
-      "time": "08:30 AM",
-    },
-    {
-      "farmer": "Anjali Silva",
-      "capacity": "800 kg",
-      "pickup": "Gampaha",
-      "dropoff": "Negombo",
-      "date": "2025-09-13",
-      "time": "02:00 PM",
-    },
-  ];
+  void _acceptRequest(String docId, Map<String, dynamic> req) async {
+    // Add to acceptedTrips in Firestore
+    await _firestore
+        .collection('drivers')
+        .doc(driverId)
+        .collection('acceptedTrips')
+        .add(req);
 
-  final List<Map<String, String>> _acceptedTrips = [];
+    // Remove from tripRequests
+    await _firestore
+        .collection('drivers')
+        .doc(driverId)
+        .collection('tripRequests')
+        .doc(docId)
+        .delete();
 
-  void _acceptRequest(int index) {
-    setState(() {
-      _acceptedTrips.add(_tripRequests[index]);
-      _tripRequests.removeAt(index);
-    });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "Accepted trip request from ${_acceptedTrips.last["farmer"]}",
-        ),
-      ),
+      SnackBar(content: Text("Accepted trip request from ${req['farmer']}")),
     );
   }
 
-  void _rejectRequest(int index) {
+  void _rejectRequest(String docId, String farmerName) async {
+    await _firestore
+        .collection('drivers')
+        .doc(driverId)
+        .collection('tripRequests')
+        .doc(docId)
+        .delete();
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          "Rejected trip request from ${_tripRequests[index]["farmer"]}",
-        ),
-      ),
+      SnackBar(content: Text("Rejected trip request from $farmerName")),
     );
-    setState(() {
-      _tripRequests.removeAt(index);
-    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final tripRequestsRef = _firestore
+        .collection('drivers')
+        .doc(driverId)
+        .collection('tripRequests');
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF3E0),
       body: SafeArea(
@@ -85,7 +79,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                       shape: const CircleBorder(),
                       color: Colors.transparent,
                       child: CircleAvatar(
-                        backgroundColor: Color(0xFFFFB74D),
+                        backgroundColor: const Color(0xFFFFB74D),
                         child: IconButton(
                           icon: const Icon(
                             Icons.arrow_back,
@@ -96,7 +90,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                       ),
                     ),
                   ),
-                  // Center logo
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -112,8 +105,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                     ),
                     child: Image.asset("assets/logo.png", height: 35),
                   ),
-
-                  // Notification + Profile
                   Align(
                     alignment: Alignment.centerRight,
                     child: Row(
@@ -185,186 +176,201 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                child: _tripRequests.isEmpty
-                    ? const Center(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: tripRequestsRef.snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(
                         child: Text(
                           "No trip requests available",
                           style: TextStyle(fontSize: 16, color: Colors.black54),
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: _tripRequests.length,
-                        itemBuilder: (context, index) {
-                          final req = _tripRequests[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 5,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                    horizontal: 14,
-                                  ),
-                                  decoration: const BoxDecoration(
-                                    color: Color.fromRGBO(255, 204, 128, 1),
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(16),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    "🚜 Farmer: ${req["farmer"]}",
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
+                      );
+                    }
+
+                    final trips = snapshot.data!.docs;
+
+                    return ListView.builder(
+                      itemCount: trips.length,
+                      itemBuilder: (context, index) {
+                        final trip =
+                            trips[index].data() as Map<String, dynamic>;
+                        final docId = trips[index].id;
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                  horizontal: 14,
+                                ),
+                                decoration: const BoxDecoration(
+                                  color: Color.fromRGBO(255, 204, 128, 1),
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16),
                                   ),
                                 ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFFFFF3E0), Colors.white],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                    borderRadius: const BorderRadius.vertical(
-                                      bottom: Radius.circular(16),
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.scale,
-                                            size: 18,
-                                            color: Colors.black54,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text("Capacity: ${req["capacity"]}"),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.location_on,
-                                            size: 18,
-                                            color: Colors.green,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              "Pickup: ${req["pickup"]}",
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.flag,
-                                            size: 18,
-                                            color: Colors.redAccent,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              "Dropoff: ${req["dropoff"]}",
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.calendar_today,
-                                            size: 16,
-                                            color: Colors.blueGrey,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text("Date: ${req["date"]}"),
-                                          const SizedBox(width: 16),
-                                          const Icon(
-                                            Icons.access_time,
-                                            size: 16,
-                                            color: Colors.blueGrey,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text("Time: ${req["time"]}"),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          ElevatedButton.icon(
-                                            onPressed: () =>
-                                                _rejectRequest(index),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.redAccent,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            icon: const Icon(
-                                              Icons.close,
-                                              size: 18,
-                                              color: Colors.white,
-                                            ),
-                                            label: const Text(
-                                              "Reject",
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          ElevatedButton.icon(
-                                            onPressed: () =>
-                                                _acceptRequest(index),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.green,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            icon: const Icon(
-                                              Icons.check,
-                                              size: 18,
-                                              color: Colors.white,
-                                            ),
-                                            label: const Text(
-                                              "Accept",
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                child: Text(
+                                  "🚜 Farmer: ${trip['farmer']}",
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
                                   ),
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                              ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFFFF3E0), Colors.white],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  borderRadius: const BorderRadius.vertical(
+                                    bottom: Radius.circular(16),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.scale,
+                                          size: 18,
+                                          color: Colors.black54,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text("Capacity: ${trip['capacity']}"),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on,
+                                          size: 18,
+                                          color: Colors.green,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            "Pickup: ${trip['pickup']}",
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.flag,
+                                          size: 18,
+                                          color: Colors.redAccent,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            "Dropoff: ${trip['dropoff']}",
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.calendar_today,
+                                          size: 16,
+                                          color: Colors.blueGrey,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text("Date: ${trip['date']}"),
+                                        const SizedBox(width: 16),
+                                        const Icon(
+                                          Icons.access_time,
+                                          size: 16,
+                                          color: Colors.blueGrey,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text("Time: ${trip['time']}"),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        ElevatedButton.icon(
+                                          onPressed: () => _rejectRequest(
+                                            docId,
+                                            trip['farmer'],
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.redAccent,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          icon: const Icon(
+                                            Icons.close,
+                                            size: 18,
+                                            color: Colors.white,
+                                          ),
+                                          label: const Text(
+                                            "Reject",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        ElevatedButton.icon(
+                                          onPressed: () =>
+                                              _acceptRequest(docId, trip),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          icon: const Icon(
+                                            Icons.check,
+                                            size: 18,
+                                            color: Colors.white,
+                                          ),
+                                          label: const Text(
+                                            "Accept",
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
 
@@ -386,8 +392,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            DriverTripScreen(acceptedTrips: _acceptedTrips),
+                        builder: (_) => DriverTripScreen(driverId: driverId),
                       ),
                     );
                   }),
@@ -425,16 +430,13 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Top Row: Pen (edit) left, Close right
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         GestureDetector(
                           onTap: () {
                             Navigator.pop(ctx);
-                            context.push(
-                              '/driver-registration',
-                            ); // navigate to edit profile
+                            context.push('/driver-registration');
                           },
                           child: const Icon(
                             Icons.edit,

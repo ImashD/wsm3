@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/services/auth_service.dart';
 
 class LabourRegistrationPage extends StatefulWidget {
@@ -31,6 +33,45 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadExistingData();
+  }
+
+  Future<void> _loadExistingData() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data()?['labourDetails'];
+        if (data != null) {
+          setState(() {
+            _nameController.text = data['name'] ?? '';
+            _nicController.text = data['nic'] ?? '';
+            _phoneController.text = data['phone'] ?? '';
+            _addressController.text = data['address'] ?? '';
+            _age = data['age'] ?? 18;
+            _experience = data['experience'] ?? 0;
+            _selectedSkill = data['skill'];
+            if (_selectedSkill != null && !_skills.contains(_selectedSkill!)) {
+              _selectedSkill = "Other";
+              _customSkillController.text = data['skill'] ?? '';
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading labour data: $e");
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _nicController.dispose();
@@ -44,17 +85,38 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
 
     try {
       final authService = AuthService();
-      await authService.registerRole(UserRole.labour);
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) throw Exception("User not logged in");
+
+      final skill = _selectedSkill == "Other"
+          ? _customSkillController.text
+          : _selectedSkill;
+
+      final labourData = {
+        "name": _nameController.text,
+        "nic": _nicController.text,
+        "phone": _phoneController.text,
+        "address": _addressController.text,
+        "age": _age,
+        "experience": _experience,
+        "skill": skill,
+      };
+
+      // ✅ Update Firestore directly
+      final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+      await userDoc.set({
+        "role": "labour",
+        "labourDetails": labourData,
+      }, SetOptions(merge: true));
+
       await authService.setUserRole(UserRole.labour);
 
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Labour registered successfully!")),
+        const SnackBar(content: Text("Details saved successfully!")),
       );
 
       context.push('/dashboard/labour');
@@ -92,11 +154,8 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
             controller: controller,
             keyboardType: inputType,
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return "Please enter $label";
-              }
+              if (value == null || value.isEmpty) return "Please enter $label";
 
-              // Name validation (letters only)
               if (label == "Full Name") {
                 final nameReg = RegExp(r'^[A-Za-z ]+$');
                 if (!nameReg.hasMatch(value)) {
@@ -104,7 +163,6 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                 }
               }
 
-              // NIC validation
               if (label == "N.I.C") {
                 final oldNIC = RegExp(r'^[0-9]{9}[vV]$');
                 final newNIC = RegExp(r'^[0-9]{12}$');
@@ -113,7 +171,6 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                 }
               }
 
-              // Phone validation
               if (label == "Phone Number") {
                 final phoneReg = RegExp(r'^[0-9]{10,}$');
                 if (!phoneReg.hasMatch(value)) {
@@ -203,7 +260,6 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Stack(
               children: [
                 Container(height: 160, color: const Color(0xFF2196F3)),
@@ -253,8 +309,6 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                 ),
               ],
             ),
-
-            // Form
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -263,7 +317,6 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-
                 child: SingleChildScrollView(
                   child: Form(
                     key: _formKey,
@@ -298,8 +351,6 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                           hint: "Your home address",
                           controller: _addressController,
                         ),
-
-                        // Skill dropdown
                         Align(
                           alignment: Alignment.centerLeft,
                           child: const Text(
@@ -313,7 +364,7 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
                           value: _selectedSkill,
-                          hint: Text("Select Your Skill Type"),
+                          hint: const Text("Select Your Skill Type"),
                           items: _skills
                               .map(
                                 (skill) => DropdownMenuItem(
@@ -322,11 +373,9 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                                 ),
                               )
                               .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedSkill = value;
-                            });
-                          },
+                          onChanged: (value) => setState(() {
+                            _selectedSkill = value;
+                          }),
                           validator: (value) =>
                               value == null ? "Please select a skill" : null,
                           decoration: InputDecoration(
@@ -339,14 +388,12 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-
                         if (_selectedSkill == "Other")
                           _buildTextField(
                             label: "Custom Skill",
                             hint: "Enter your skill",
                             controller: _customSkillController,
                           ),
-
                         _buildNumericField(
                           label: "Driving Experience",
                           value: _experience,
@@ -356,10 +403,7 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                             () => _experience > 0 ? _experience-- : 0,
                           ),
                         ),
-
                         const SizedBox(height: 20),
-
-                        // Submit Button
                         SizedBox(
                           width: 200,
                           child: ElevatedButton(
