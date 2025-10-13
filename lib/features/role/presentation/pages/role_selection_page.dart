@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/services/auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RoleSelectionPage extends StatefulWidget {
   const RoleSelectionPage({super.key});
@@ -16,16 +18,33 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authService = AuthService();
-      final isRegistered = await authService.isRoleRegistered(role);
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) throw Exception("User not logged in");
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      final data = doc.data();
+
+      bool isRegistered = false;
+
+      if (role == UserRole.labour) {
+        isRegistered = data != null && data['labourDetails'] != null;
+      } else if (role == UserRole.driver) {
+        isRegistered = data != null && data['driverDetails'] != null;
+      } else if (role == UserRole.farmer) {
+        isRegistered = data != null && data['farmerDetails'] != null;
+      }
 
       if (!mounted) return;
 
       if (isRegistered) {
-        await authService.setUserRole(role);
+        // Already registered → go to dashboard
+        await AuthService().setUserRole(role);
         context.push('/dashboard/${role.name}');
       } else {
-        // Navigate directly to the separate registration page
+        // Not registered → go to registration page
         switch (role) {
           case UserRole.farmer:
             context.push('/role-registration/farmer/step1');

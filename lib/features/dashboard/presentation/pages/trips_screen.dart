@@ -1,267 +1,159 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class DriverTripScreen extends StatelessWidget {
-  final String driverId;
+class DriverTripsPage extends StatefulWidget {
+  final List<Map<String, String>>? acceptedTrips; // optional parameter
+  const DriverTripsPage({super.key, this.acceptedTrips});
 
-  const DriverTripScreen({super.key, required this.driverId});
+  @override
+  State<DriverTripsPage> createState() => _DriverTripsPageState();
+}
+
+class _DriverTripsPageState extends State<DriverTripsPage> {
+  String? statusFilter;
 
   @override
   Widget build(BuildContext context) {
-    final acceptedTripsRef = FirebaseFirestore.instance
-        .collection('drivers')
-        .doc(driverId)
-        .collection('acceptedTrips');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return const Scaffold(body: Center(child: Text("Not logged in")));
+    }
+
+    Query tripsQuery = FirebaseFirestore.instance
+        .collection('trips')
+        .where('driverId', isEqualTo: uid)
+        .orderBy('date', descending: true);
+
+    if (statusFilter != null) {
+      tripsQuery = tripsQuery.where('status', isEqualTo: statusFilter);
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Trips", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFFFF9800),
+        title: Text(
+          statusFilter != null
+              ? "${statusFilter![0].toUpperCase()}${statusFilter!.substring(1)} Trips"
+              : "My Trips",
+          style: TextStyle(color: Colors.white),
+        ),
+
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: acceptedTripsRef.snapshots(),
+        stream: tripsQuery.snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+
+          final trips = snapshot.data!.docs;
+
+          if (trips.isEmpty) {
             return const Center(
               child: Text(
-                "No accepted trips yet",
+                "No trips found",
                 style: TextStyle(fontSize: 16, color: Colors.black54),
               ),
             );
           }
 
-          final trips = snapshot.data!.docs;
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: trips.length,
+            itemBuilder: (context, index) {
+              final trip = trips[index].data()! as Map<String, dynamic>;
+              final status = trip['status'] ?? 'pending';
+              Color statusColor;
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ListView.builder(
-              itemCount: trips.length,
-              itemBuilder: (context, index) {
-                final tripDoc = trips[index];
-                final trip = tripDoc.data() as Map<String, dynamic>;
-                final currentStatus = trip['status'] ?? 'Pending';
+              switch (status) {
+                case 'completed':
+                  statusColor = Colors.green;
+                  break;
+                case 'cancelled':
+                  statusColor = Colors.red;
+                  break;
+                default:
+                  statusColor = Colors.orange;
+              }
 
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 5,
-                        offset: Offset(2, 3),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(24),
+              return Card(
+                margin: const EdgeInsets.only(bottom: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 5,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child: Icon(
-                          Icons.local_shipping,
-                          size: 80,
-                          color: const Color(0xFFFF9800),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
                       Text(
-                        "🚜 Farmer: ${trip['farmer']}",
+                        trip['title'] ?? 'Trip',
                         style: const TextStyle(
-                          fontSize: 22,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.scale,
-                            size: 20,
-                            color: Colors.black54,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              "Capacity: ${trip['capacity']}",
-                              style: const TextStyle(fontSize: 18),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            size: 20,
-                            color: Colors.green,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              "Pickup: ${trip['pickup']}",
-                              style: const TextStyle(fontSize: 18),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.flag,
-                            size: 20,
-                            color: Colors.redAccent,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              "Dropoff: ${trip['dropoff']}",
-                              style: const TextStyle(fontSize: 18),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           const Icon(
                             Icons.calendar_today,
-                            size: 18,
+                            size: 16,
                             color: Colors.blueGrey,
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Date:",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                Text(
-                                  trip['date'] ?? '',
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                              ],
-                            ),
-                          ),
+                          const SizedBox(width: 6),
+                          Text(trip['date'] ?? ''),
                           const SizedBox(width: 16),
                           const Icon(
                             Icons.access_time,
-                            size: 18,
+                            size: 16,
                             color: Colors.blueGrey,
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Time:",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                Text(
-                                  trip['time'] ?? '',
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                              ],
-                            ),
-                          ),
+                          const SizedBox(width: 6),
+                          Text(trip['time'] ?? ''),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 8),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            "Status: $currentStatus",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          const Icon(
+                            Icons.location_on,
+                            size: 18,
+                            color: Colors.green,
                           ),
-                          DropdownButton<String>(
-                            value: currentStatus,
-                            items: ['Pending', 'In Progress', 'Completed']
-                                .map(
-                                  (status) => DropdownMenuItem(
-                                    value: status,
-                                    child: Text(status),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (newStatus) {
-                              if (newStatus != null) {
-                                acceptedTripsRef.doc(tripDoc.id).update({
-                                  'status': newStatus,
-                                });
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      "Trip status updated to $newStatus",
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
+                          const SizedBox(width: 6),
+                          Expanded(child: Text(trip['location'] ?? '')),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Open Map for tracking"),
-                              ),
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.location_on,
-                            color: Colors.white,
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.work,
+                            size: 18,
+                            color: Colors.black54,
                           ),
-                          label: const Text(
-                            "Track Trip Location",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF9800),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 24,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 6,
-                          ),
+                          const SizedBox(width: 6),
+                          Text("Vehicle: ${trip['vehicleType'] ?? '-'}"),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Chip(
+                        label: Text(
+                          status.toUpperCase(),
+                          style: const TextStyle(color: Colors.white),
                         ),
+                        backgroundColor: statusColor,
                       ),
                     ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           );
         },
       ),
