@@ -65,6 +65,11 @@ dependencies:
   cloud_firestore: ^6.0.2
   firebase_storage: ^13.0.2
   qr_flutter: ^4.0.0
+  
+  # AI Chatbot dependencies
+  dart_openai: ^5.1.0  # For OpenAI API
+  google_generative_ai: ^0.4.6  # For Gemini AI (updated version)
+  uuid: ^4.3.3  # For generating unique message IDs
 
 dev_dependencies:
   flutter_test:
