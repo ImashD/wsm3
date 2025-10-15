@@ -11,6 +11,7 @@ import '../../features/dashboard/presentation/pages/labour_dashboard_page.dart';
 import '../../features/role/presentation/pages/farmer_registration_page.dart';
 import '../../features/role/presentation/pages/labour_registration_page.dart';
 import '../../features/role/presentation/pages/driver_registration_page.dart';
+import '../../features/test/gemini_test_page.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/drawer/contact.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/drawer/learn.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/drawer/products.dart';
@@ -126,6 +127,11 @@ class NavigationService {
         GoRoute(
           path: '/stores',
           builder: (context, state) => const StoresScreen(),
+        ),
+
+        GoRoute(
+          path: '/gemini-test',
+          builder: (context, state) => const GeminiTestPage(),
         ),
         GoRoute(
           path: '/weather',
