@@ -18,7 +18,6 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
   final _nameController = TextEditingController();
   final _nicController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _licenseController = TextEditingController();
   final _vehiclenoController = TextEditingController();
   String? _selectedVehicle;
   int _experience = 0;
@@ -42,18 +41,17 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
     if (uid == null) return;
 
     final doc = await FirebaseFirestore.instance
-        .collection('users')
+        .collection('drivers')
         .doc(uid)
         .get();
 
     if (doc.exists) {
-      final data = doc.data()?['driverDetails'];
+      final data = doc.data();
       if (data != null) {
         setState(() {
           _nameController.text = data['fullName'] ?? '';
           _nicController.text = data['nic'] ?? '';
           _phoneController.text = data['phone'] ?? '';
-          _licenseController.text = data['license'] ?? '';
           _vehiclenoController.text = data['vehicleno'] ?? '';
           _selectedVehicle = data['vehicleType'];
           _experience = data['experience'] ?? 0;
@@ -74,23 +72,22 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
         "fullName": _nameController.text,
         "nic": _nicController.text,
         "phone": _phoneController.text,
-        "license": _licenseController.text,
         "vehicleno": _vehiclenoController.text,
         "vehicleType": _selectedVehicle,
         "experience": _experience,
       };
 
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      await FirebaseFirestore.instance.collection('drivers').doc(uid).set({
         "role": "driver",
-        "driverDetails": driverData,
+        ...driverData,
       }, SetOptions(merge: true));
 
       await AuthService().setUserRole(UserRole.driver);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Driver details saved!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Driver profile saved successfully!")),
+      );
 
       context.push('/dashboard/driver');
     } catch (e) {
@@ -307,20 +304,15 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
                         ),
                         _buildTextField(
                           label: "Phone Number",
-                          hint: "Your phone number",
+                          hint: "07XXXXXXXX",
                           controller: _phoneController,
                           inputType: TextInputType.phone,
-                        ),
-                        _buildTextField(
-                          label: "Driving License ID",
-                          hint: "Your driving license ID",
-                          controller: _licenseController,
                         ),
 
                         _buildTextField(
                           label: "Vehicle Number",
                           hint: "Your vehicle number (e.g. ABC-1234)",
-                          controller: _licenseController,
+                          controller: _vehiclenoController,
                         ),
                         Align(
                           alignment: Alignment.centerLeft,
@@ -355,6 +347,7 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 20),
                         _buildNumericField(
                           label: "Driving Experience",
                           value: _experience,

@@ -14,6 +14,34 @@ class RoleSelectionPage extends StatefulWidget {
 class _RoleSelectionPageState extends State<RoleSelectionPage> {
   bool _isLoading = false;
 
+  /// Check if the current user is already registered in Firestore for a role
+  Future<bool> _isUserRegistered(UserRole role, String uid) async {
+    late DocumentSnapshot doc;
+
+    switch (role) {
+      case UserRole.farmer:
+        doc = await FirebaseFirestore.instance
+            .collection('farmers')
+            .doc(uid)
+            .get();
+        break;
+      case UserRole.driver:
+        doc = await FirebaseFirestore.instance
+            .collection('drivers')
+            .doc(uid)
+            .get();
+        break;
+      case UserRole.labour:
+        doc = await FirebaseFirestore.instance
+            .collection('labours')
+            .doc(uid)
+            .get();
+        break;
+    }
+
+    return doc.exists;
+  }
+
   Future<void> _handleRoleTap(UserRole role) async {
     setState(() => _isLoading = true);
 
@@ -21,27 +49,14 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) throw Exception("User not logged in");
 
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
-      final data = doc.data();
-
-      bool isRegistered = false;
-
-      if (role == UserRole.labour) {
-        isRegistered = data != null && data['labourDetails'] != null;
-      } else if (role == UserRole.driver) {
-        isRegistered = data != null && data['driverDetails'] != null;
-      } else if (role == UserRole.farmer) {
-        isRegistered = data != null && data['farmerDetails'] != null;
-      }
+      final isRegistered = await _isUserRegistered(role, uid);
 
       if (!mounted) return;
 
       if (isRegistered) {
         // Already registered → go to dashboard
         await AuthService().setUserRole(role);
+
         context.push('/dashboard/${role.name}');
       } else {
         // Not registered → go to registration page

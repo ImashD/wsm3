@@ -44,12 +44,12 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
       if (uid == null) return;
 
       final doc = await FirebaseFirestore.instance
-          .collection('users')
+          .collection('labours')
           .doc(uid)
           .get();
 
       if (doc.exists) {
-        final data = doc.data()?['labourDetails'];
+        final data = doc.data();
         if (data != null) {
           setState(() {
             _nameController.text = data['name'] ?? '';
@@ -106,17 +106,17 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
       };
 
       // ✅ Update Firestore directly
-      final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+      final userDoc = FirebaseFirestore.instance.collection('labours').doc(uid);
       await userDoc.set({
         "role": "labour",
-        "labourDetails": labourData,
+        ...labourData,
       }, SetOptions(merge: true));
 
       await authService.setUserRole(UserRole.labour);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Details saved successfully!")),
+        const SnackBar(content: Text("Labour profile saved successfully!")),
       );
 
       context.push('/dashboard/labour');
@@ -334,7 +334,7 @@ class _LabourRegistrationPageState extends State<LabourRegistrationPage> {
                         ),
                         _buildTextField(
                           label: "Phone Number",
-                          hint: "Your phone number",
+                          hint: "07XXXXXXXX",
                           controller: _phoneController,
                           inputType: TextInputType.phone,
                         ),

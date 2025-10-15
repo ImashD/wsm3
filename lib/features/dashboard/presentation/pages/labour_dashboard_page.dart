@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'job_screen.dart';
 import '../../../../core/services/auth_service.dart';
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LabourDashboardPage extends StatefulWidget {
   const LabourDashboardPage({super.key});
@@ -19,10 +22,52 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
   String? _profileImageUrl;
   bool _isAvailable = true;
 
+  StreamSubscription<DocumentSnapshot>? _labourSubscription;
+
   @override
   void initState() {
     super.initState();
+    _listenToLabourData();
     _loadProfileImage();
+  }
+
+  void _listenToLabourData() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    _labourSubscription = FirebaseFirestore.instance
+        .collection('labours')
+        .doc(uid)
+        .snapshots()
+        .listen((doc) async {
+          if (doc.exists) {
+            final data = doc.data()!;
+            setState(() {
+              _isAvailable = data['available'] ?? false;
+            });
+          } else {
+            // If doc doesn’t exist, create it once
+            await FirebaseFirestore.instance.collection('labours').doc(uid).set(
+              {'available': false},
+            );
+            setState(() {
+              _isAvailable = false;
+            });
+          }
+        });
+  }
+
+  Future<void> _toggleAvailability(bool value) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    setState(() {
+      _isAvailable = value;
+    });
+
+    await FirebaseFirestore.instance.collection('labours').doc(uid).set({
+      'available': value,
+    }, SetOptions(merge: true));
   }
 
   Future<void> _pickProfileImage() async {
@@ -32,7 +77,7 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
         _profileImage = File(pickedFile.path);
       });
 
-      // Optional: upload to Firebase Storage
+      // ✅ Upload to Firebase Storage
       final uid = AuthService().getCurrentUserId();
       if (uid != null) {
         final ref = FirebaseStorage.instance.ref().child(
@@ -47,7 +92,35 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
     }
   }
 
-  // Pick profile image from gallery
+  // ✅ Fetch profile image from Firebase Storage
+  Future<void> _loadProfileImage() async {
+    final uid = AuthService().getCurrentUserId();
+    if (uid == null) return;
+
+    try {
+      final url = await FirebaseStorage.instance
+          .ref('labour_profile_images/$uid.jpg')
+          .getDownloadURL();
+      setState(() {
+        _profileImageUrl = url;
+      });
+    } catch (e) {
+      _profileImageUrl = null;
+    }
+  }
+
+  // ✅ Fetch labour details (updated — no labourDetails subfield)
+  Future<Map<String, dynamic>?> fetchLabourDetails() async {
+    final uid = AuthService().getCurrentUserId();
+    if (uid == null) return null;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('labours')
+        .doc(uid)
+        .get();
+    if (!doc.exists) return null;
+    return doc.data();
+  }
 
   final List<Map<String, String>> _jobRequests = [
     {
@@ -93,29 +166,6 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
     });
   }
 
-  /// Fetch profile image from Firebase Storage
-  Future<void> _loadProfileImage() async {
-    final uid = AuthService().getCurrentUserId();
-    if (uid == null) return;
-
-    try {
-      final url = await FirebaseStorage.instance
-          .ref('labour_profile_images/$uid.jpg')
-          .getDownloadURL();
-      setState(() {
-        _profileImageUrl = url;
-      });
-    } catch (e) {
-      // No image uploaded yet
-      _profileImageUrl = null;
-    }
-  }
-
-  Future<Map<String, dynamic>?> fetchLabourDetails() async {
-    final data = await AuthService().getUserData();
-    return data?['labourDetails'];
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,13 +173,12 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar
+            // ✅ Top bar
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 15, 12, 15),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Center logo
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -155,13 +204,13 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
                       shape: const CircleBorder(),
                       color: Colors.transparent,
                       child: CircleAvatar(
-                        backgroundColor: Color(0xFF00BCD4),
+                        backgroundColor: const Color(0xFF00BCD4),
                         child: IconButton(
                           icon: const Icon(
                             Icons.arrow_back,
                             color: Colors.white,
                           ),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () => context.go('/role-selection'),
                         ),
                       ),
                     ),
@@ -198,7 +247,7 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
               ),
             ),
 
-            // Tagline
+            // ✅ Tagline
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.all(12),
@@ -220,21 +269,22 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
               ),
             ),
 
-            // Availability switch
+            // ✅ Availability switch
             SwitchListTile(
               title: const Text(
                 "Available for Work",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               value: _isAvailable,
-              onChanged: (val) => setState(() => _isAvailable = val),
+              onChanged: (val) => _toggleAvailability(val),
+
               activeColor: Colors.black,
               activeTrackColor: const Color(0xFF00ACC1),
             ),
 
             const SizedBox(height: 8),
 
-            // Job Requests
+            // ✅ Job Requests
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -420,7 +470,7 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
               ),
             ),
 
-            // Bottom Navigation
+            // ✅ Bottom navigation
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Row(
@@ -452,8 +502,7 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
     );
   }
 
-  // Profile Dialog with edit (pen) icon
-  // Profile dialog
+  // ✅ Profile Dialog
   void _showProfileDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -470,7 +519,7 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
                   future: fetchLabourDetails(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return SizedBox(
+                      return const SizedBox(
                         height: 200,
                         child: Center(child: CircularProgressIndicator()),
                       );
@@ -553,7 +602,7 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         Text(
                           "Speciality: ${labour?['skill'] ?? "General Farm Work"}",
                         ),
@@ -573,6 +622,17 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
                           child: const Text(
                             "Switch Role",
                             style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            context.go('/signin');
+                          },
+                          child: const Text(
+                            "Logout",
+                            style: TextStyle(color: const Color(0xFF00ACC1)),
                           ),
                         ),
                       ],
@@ -602,5 +662,11 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
         Text(label, style: const TextStyle(fontSize: 12)),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    _labourSubscription?.cancel();
+    super.dispose();
   }
 }

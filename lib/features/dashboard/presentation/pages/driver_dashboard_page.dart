@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -41,38 +42,57 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
 
   final List<Map<String, String>> _acceptedTrips = [];
 
+  StreamSubscription<DocumentSnapshot>? _driverSubscription;
+
   @override
   void initState() {
     super.initState();
-    _loadDriverData();
+    _listenToDriverData(); // use real-time listener instead of one-time load
   }
 
-  Future<void> _loadDriverData() async {
+  void _listenToDriverData() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
+    _driverSubscription = FirebaseFirestore.instance
+        .collection('drivers')
         .doc(uid)
-        .get();
-    if (doc.exists) {
-      final data = doc.data()?['driverDetails'];
-      final availability = doc.data()?['driverDetails']?['available'] ?? false;
+        .snapshots()
+        .listen((doc) async {
+          if (doc.exists) {
+            final data = doc.data()!;
+            setState(() {
+              _driverData = data;
+              _isAvailable = data['available'] ?? false;
+            });
+          } else {
+            // Create the doc if it doesn’t exist yet
+            await FirebaseFirestore.instance.collection('drivers').doc(uid).set(
+              {'available': false},
+            );
+            setState(() {
+              _isAvailable = false;
+            });
+          }
+        });
+  }
 
-      setState(() {
-        _driverData = data;
-        _isAvailable = availability;
-      });
-    }
+  @override
+  void dispose() {
+    _driverSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _toggleAvailability(bool value) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    setState(() => _isAvailable = value);
-    await FirebaseFirestore.instance.collection('users').doc(uid).set({
-      'driverDetails': {'available': value},
+    setState(() {
+      _isAvailable = value;
+    });
+
+    await FirebaseFirestore.instance.collection('drivers').doc(uid).set({
+      'available': value,
     }, SetOptions(merge: true));
   }
 
@@ -112,7 +132,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Center logo
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -128,7 +147,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                     ),
                     child: Image.asset("assets/logo.png", height: 40),
                   ),
-                  // Back button
                   Positioned(
                     top: 4,
                     left: 2,
@@ -143,12 +161,11 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                             Icons.arrow_back,
                             color: Colors.white,
                           ),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () => context.go('/role-selection'),
                         ),
                       ),
                     ),
                   ),
-                  // Notification + Profile icons
                   Align(
                     alignment: Alignment.centerRight,
                     child: Row(
@@ -215,7 +232,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
 
             const SizedBox(height: 8),
 
-            // Trip Requests (like Labour jobs)
+            // Trip Requests
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -226,7 +243,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                     top: Radius.circular(20),
                   ),
                 ),
-
                 child: _tripRequests.isEmpty
                     ? const Center(
                         child: Text(
@@ -449,7 +465,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
-
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -514,8 +529,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Color(0xFFFF9800),
-                              border: Border.all(color: Colors.white, width: 2),
+                              color: const Color(0xFFFF9800),
                             ),
                             padding: const EdgeInsets.all(4),
                             child: const Icon(
@@ -527,7 +541,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 12),
                     Text(
                       _driverData?['fullName'] ?? "Driver Name",
@@ -536,14 +549,16 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     Text("Vehicle: ${_driverData?['vehicleType'] ?? '-'}"),
                     const SizedBox(height: 4),
-                    Text("License: ${_driverData?['license'] ?? '-'}"),
+                    Text("Vehicle No: ${_driverData?['vehicleno'] ?? '-'}"),
+                    const SizedBox(height: 4),
+                    Text("Contact: ${_driverData?['phone'] ?? '-'}"),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFFF9800),
+                        backgroundColor: const Color(0xFFFF9800),
                       ),
                       onPressed: () {
                         Navigator.pop(ctx);
@@ -552,6 +567,17 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                       child: const Text(
                         "Switch Role",
                         style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.go('/signin');
+                      },
+                      child: const Text(
+                        "Logout",
+                        style: TextStyle(color: const Color(0xFFFF9800)),
                       ),
                     ),
                   ],

@@ -12,39 +12,43 @@ import 'package:qr_flutter/qr_flutter.dart';
 class Farmer {
   final String id;
   final String name;
+  final String nic;
   final String contact;
   final String farmLocation;
+  final String area;
   final String crops;
 
   Farmer({
     required this.id,
     required this.name,
+    required this.nic,
     required this.contact,
     required this.farmLocation,
+    required this.area,
     required this.crops,
   });
 
   factory Farmer.fromMap(Map<String, dynamic> data, String id) {
     return Farmer(
       id: id,
-      name: data['name'] ?? '',
-      contact: data['contact'] ?? '',
-      farmLocation: data['farmLocation'] ?? '',
-      crops: data['crops'] ?? '',
+      name: (data['name'] ?? '').toString(),
+      nic: (data['nic'] ?? '').toString(),
+      contact: (data['phone'] ?? '').toString(),
+      farmLocation: (data['district'] ?? '').toString(),
+      area: (data['area'] ?? '').toString(),
+      crops: (data['crop'] ?? '').toString(),
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'contact': contact,
-      'farmLocation': farmLocation,
-      'crops': crops,
-    };
-  }
-
   String toQrString() {
-    return 'Name: $name\nContact: $contact\nLocation: $farmLocation\nCrops: $crops';
+    return '''
+Name: $name
+NIC: $nic
+Contact: $contact
+Location: $farmLocation
+Area: $area
+Crops: $crops
+''';
   }
 }
 
@@ -284,7 +288,7 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
                 Image.asset("assets/logo.png", height: 70),
                 const SizedBox(height: 8),
                 Text(
-                  _farmer?.name ?? "වී සවිය",
+                  "වී සවිය",
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 28,
@@ -508,16 +512,16 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
                     const Text(
                       "Role: Farmer",
-                      style: TextStyle(fontSize: 16, color: Colors.black87),
+                      style: TextStyle(fontSize: 14, color: Colors.black87),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       "Contact: ${_farmer?.contact ?? '+94 77 123 4567'}",
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         color: Colors.black87,
                       ),
                     ),
@@ -627,36 +631,18 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "Your QR Code",
+                  "My QR Code",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _farmer != null && _farmer!.toQrString().isNotEmpty
-                    ? QrImageView(data: _farmer!.toQrString(), size: 180)
+                    ? QrImageView(data: _farmer!.toQrString(), size: 200)
                     : Image.asset(
                         "assets/sample_qr.png",
-                        height: 180,
-                        width: 180,
+                        height: 200,
+                        width: 200,
                       ),
-
                 const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.download, color: Colors.white),
-                  label: const Text(
-                    "Download Here",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF009688),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("QR Code downloaded!")),
-                  ),
-                ),
-                const SizedBox(height: 12),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF76E2C6),

@@ -70,10 +70,14 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
   }
 
   Future<void> _loadFarmerData() async {
-    final uid = _auth.currentUser?.uid;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    final doc = await _firestore.collection('farmers').doc(uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('farmers')
+        .doc(uid)
+        .get();
+
     if (doc.exists) {
       final data = doc.data()!;
       _nameController.text = data['name'] ?? '';
@@ -121,16 +125,13 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
     setState(() => _isLoading = true);
 
     try {
-      print("🟡 Starting _saveFarmer()...");
       final user = _auth.currentUser;
       if (user == null) {
         throw Exception("User not logged in");
       }
 
       final uid = user.uid;
-      print("✅ Current UID: $uid");
 
-      print("📦 Saving farmer to Firestore...");
       await _firestore.collection('farmers').doc(uid).set({
         "uid": uid,
         "name": _nameController.text.trim(),
@@ -142,27 +143,22 @@ class _FarmerRegistrationPageState extends State<FarmerRegistrationPage> {
         "createdAt": FieldValue.serverTimestamp(),
         "updatedAt": FieldValue.serverTimestamp(),
       });
-      print("✅ Farmer saved successfully to Firestore.");
 
       _generateQrData();
-      print("🧩 QR data generated.");
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Farmer profile saved successfully.')),
+          const SnackBar(content: Text('Farmer profile saved successfully!')),
         );
-        print("➡️ Navigating to /dashboard/farmer");
+
         context.go('/dashboard/farmer');
       }
-    } catch (e, stack) {
-      print("🔥 Firestore Error: $e");
-      print(stack);
+    } catch (e) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error saving farmer: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
-      print("🟢 _saveFarmer() completed");
     }
   }
 
