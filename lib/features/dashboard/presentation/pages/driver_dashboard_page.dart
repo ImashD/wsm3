@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/trips_screen.dart';
+import '../widgets/driver_floating_chatbot.dart';
 
 class DriverDashboardPage extends StatefulWidget {
   const DriverDashboardPage({super.key});
@@ -103,9 +104,11 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF3E0),
-      body: SafeArea(
-        child: Column(
-          children: [
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
             // Top bar
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 15, 12, 15),
@@ -432,6 +435,10 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
             ),
           ],
         ),
+      ),
+        // AI Chatbot floating button
+        const DriverFloatingChatbot(),
+        ],
       ),
     );
   }

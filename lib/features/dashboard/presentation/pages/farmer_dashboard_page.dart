@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../widgets/floating_chatbot.dart';
 
 class Farmer {
   final String id;
@@ -88,180 +89,186 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: _buildDrawer(context),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  // Top Bar
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Builder(
-                            builder: (context) => IconButton(
-                              icon: const Icon(Icons.menu, size: 28),
-                              onPressed: () =>
-                                  Scaffold.of(context).openDrawer(),
-                            ),
-                          ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
+                    children: [
+                      // Top Bar
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 3,
-                                offset: Offset(1, 2),
-                              ),
-                            ],
-                          ),
-                          child: Image.asset("assets/logo.png", height: 35),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.notifications, size: 26),
-                                onPressed: () {},
-                              ),
-                              const SizedBox(width: 5),
-                              GestureDetector(
-                                onTap: () => _showProfileDialog(context),
-                                child: CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: const Color.fromARGB(
-                                    255,
-                                    118,
-                                    226,
-                                    198,
-                                  ),
-                                  backgroundImage: _profileImage != null
-                                      ? FileImage(_profileImage!)
-                                      : null,
-                                  child: _profileImage == null
-                                      ? const Icon(
-                                          Icons.person,
-                                          color: Colors.black,
-                                        )
-                                      : null,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Builder(
+                                builder: (context) => IconButton(
+                                  icon: const Icon(Icons.menu, size: 28),
+                                  onPressed: () =>
+                                      Scaffold.of(context).openDrawer(),
                                 ),
                               ),
-                            ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(30),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 3,
+                                    offset: Offset(1, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Image.asset("assets/logo.png", height: 35),
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.notifications, size: 26),
+                                    onPressed: () {},
+                                  ),
+                                  const SizedBox(width: 5),
+                                  GestureDetector(
+                                    onTap: () => _showProfileDialog(context),
+                                    child: CircleAvatar(
+                                      radius: 18,
+                                      backgroundColor: const Color.fromARGB(
+                                        255,
+                                        118,
+                                        226,
+                                        198,
+                                      ),
+                                      backgroundImage: _profileImage != null
+                                          ? FileImage(_profileImage!)
+                                          : null,
+                                      child: _profileImage == null
+                                          ? const Icon(
+                                              Icons.person,
+                                              color: Colors.black,
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Tagline
+                      Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.black54),
+                          borderRadius: BorderRadius.circular(12),
+                          color: const Color.fromARGB(255, 118, 226, 198),
+                        ),
+                        child: const Text(
+                          "තිරසාර ගොවිතැනට නව සවියක්\n"
+                          "Smart farming Starts here\n"
+                          "ஸ்மார்ட் விவசாயம் இங்கே தொடங்குகிறது",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  // Tagline
-                  Container(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.black54),
-                      borderRadius: BorderRadius.circular(12),
-                      color: const Color.fromARGB(255, 118, 226, 198),
-                    ),
-                    child: const Text(
-                      "තිරසාර ගොවිතැනට නව සවියක්\n"
-                      "Smart farming Starts here\n"
-                      "ஸ்மார்ட் விவசாயம் இங்கே தொடங்குகிறது",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Feature Grid
-                  Expanded(
-                    child: GridView.count(
-                      crossAxisCount: 2,
-                      padding: const EdgeInsets.all(16),
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      children: [
-                        _featureCard(
-                          context,
-                          "Market Rate",
-                          "assets/market.png",
-                          "/market",
-                        ),
-                        _featureCard(
-                          context,
-                          "Store Locations",
-                          "assets/store.png",
-                          "/stores",
-                        ),
-                        _featureCard(
-                          context,
-                          "Request Labors",
-                          "assets/labors.png",
-                          "/labors",
-                        ),
-                        _featureCard(
-                          context,
-                          "Request Drivers",
-                          "assets/drivers.png",
-                          "/drivers",
-                        ),
-                        _featureCard(
-                          context,
-                          "Cultivation Info",
-                          "assets/cultivation.png",
-                          "/cultivation",
-                        ),
-                        _featureCard(
-                          context,
-                          "Weather",
-                          "assets/weather.png",
-                          "/weather",
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Bottom nav
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _bottomNavButton(Icons.chat, "Ask me", () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Chatbot feature coming soon..."),
+                      const SizedBox(height: 10),
+                      // Feature Grid
+                      Expanded(
+                        child: GridView.count(
+                          crossAxisCount: 2,
+                          padding: const EdgeInsets.all(16),
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          children: [
+                            _featureCard(
+                              context,
+                              "Market Rate",
+                              "assets/market.png",
+                              "/market",
                             ),
-                          );
-                        }),
-                        const SizedBox(width: 25),
-                        _bottomNavButton(
-                          Icons.qr_code,
-                          "My Code",
-                          () => _showQrCodeDialog(context),
+                            _featureCard(
+                              context,
+                              "Store Locations",
+                              "assets/store.png",
+                              "/stores",
+                            ),
+                            _featureCard(
+                              context,
+                              "Request Labors",
+                              "assets/labors.png",
+                              "/labors",
+                            ),
+                            _featureCard(
+                              context,
+                              "Request Drivers",
+                              "assets/drivers.png",
+                              "/drivers",
+                            ),
+                            _featureCard(
+                              context,
+                              "Cultivation Info",
+                              "assets/cultivation.png",
+                              "/cultivation",
+                            ),
+                            _featureCard(
+                              context,
+                              "Weather",
+                              "assets/weather.png",
+                              "/weather",
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      // Bottom nav
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _bottomNavButton(Icons.chat, "Ask me", () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Use the AI chatbot button!"),
+                                ),
+                              );
+                            }),
+                            const SizedBox(width: 25),
+                            _bottomNavButton(
+                              Icons.qr_code,
+                              "My Code",
+                              () => _showQrCodeDialog(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+          ),
+          // Floating AI Chatbot
+          const FloatingChatbot(),
+        ],
       ),
     );
   }
