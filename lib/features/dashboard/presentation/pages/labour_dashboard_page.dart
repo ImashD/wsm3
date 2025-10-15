@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'job_screen.dart';
 import '../../../../core/services/auth_service.dart';
@@ -19,7 +18,6 @@ class LabourDashboardPage extends StatefulWidget {
 class _LabourDashboardPageState extends State<LabourDashboardPage> {
   final ImagePicker _picker = ImagePicker();
   File? _profileImage;
-  String? _profileImageUrl;
   bool _isAvailable = true;
 
   StreamSubscription<DocumentSnapshot>? _labourSubscription;
@@ -28,7 +26,6 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
   void initState() {
     super.initState();
     _listenToLabourData();
-    _loadProfileImage();
   }
 
   void _listenToLabourData() {
@@ -70,42 +67,17 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
     }, SetOptions(merge: true));
   }
 
-  Future<void> _pickProfileImage() async {
+  Future<void> _pickProfileImage(Function setDialogState) async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
+      final file = File(pickedFile.path);
       setState(() {
-        _profileImage = File(pickedFile.path);
+        _profileImage = file;
       });
 
-      // ✅ Upload to Firebase Storage
-      final uid = AuthService().getCurrentUserId();
-      if (uid != null) {
-        final ref = FirebaseStorage.instance.ref().child(
-          'labour_profile_images/$uid.jpg',
-        );
-        await ref.putFile(_profileImage!);
-        final url = await ref.getDownloadURL();
-        setState(() {
-          _profileImageUrl = url;
-        });
-      }
-    }
-  }
-
-  // ✅ Fetch profile image from Firebase Storage
-  Future<void> _loadProfileImage() async {
-    final uid = AuthService().getCurrentUserId();
-    if (uid == null) return;
-
-    try {
-      final url = await FirebaseStorage.instance
-          .ref('labour_profile_images/$uid.jpg')
-          .getDownloadURL();
-      setState(() {
-        _profileImageUrl = url;
+      setDialogState(() {
+        _profileImage = file;
       });
-    } catch (e) {
-      _profileImageUrl = null;
     }
   }
 
@@ -229,15 +201,10 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
                         const SizedBox(width: 5),
                         GestureDetector(
                           onTap: () => _showProfileDialog(context),
-                          child: CircleAvatar(
+                          child: const CircleAvatar(
                             radius: 18,
-                            backgroundColor: const Color(0xFF00BCD4),
-                            backgroundImage: _profileImage != null
-                                ? FileImage(_profileImage!)
-                                : null,
-                            child: _profileImage == null
-                                ? const Icon(Icons.person, color: Colors.black)
-                                : null,
+                            backgroundColor: Color(0xFF00BCD4),
+                            child: Icon(Icons.person, color: Colors.black),
                           ),
                         ),
                       ],
@@ -559,17 +526,12 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
                               backgroundColor: const Color(0xFF80DEEA),
                               backgroundImage: _profileImage != null
                                   ? FileImage(_profileImage!)
-                                  : (_profileImageUrl != null
-                                            ? NetworkImage(_profileImageUrl!)
-                                            : null)
-                                        as ImageProvider?,
-                              child:
-                                  (_profileImage == null &&
-                                      _profileImageUrl == null)
+                                  : null,
+                              child: _profileImage == null
                                   ? const Icon(
                                       Icons.person,
                                       size: 50,
-                                      color: Colors.black,
+                                      color: Colors.white,
                                     )
                                   : null,
                             ),
@@ -577,7 +539,7 @@ class _LabourDashboardPageState extends State<LabourDashboardPage> {
                               bottom: 0,
                               right: 0,
                               child: GestureDetector(
-                                onTap: _pickProfileImage,
+                                onTap: () => _pickProfileImage(setDialogState),
                                 child: Container(
                                   decoration: const BoxDecoration(
                                     color: Color(0xFF00BCD4),

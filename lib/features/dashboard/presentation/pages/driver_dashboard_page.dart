@@ -181,12 +181,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                           child: CircleAvatar(
                             radius: 18,
                             backgroundColor: const Color(0xFFFFB74D),
-                            backgroundImage: _profileImage != null
-                                ? FileImage(_profileImage!)
-                                : null,
-                            child: _profileImage == null
-                                ? const Icon(Icons.person, color: Colors.black)
-                                : null,
+                            child: Icon(Icons.person, color: Colors.black),
                           ),
                         ),
                       ],

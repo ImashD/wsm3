@@ -479,7 +479,7 @@ class _FarmerDashboardPageState extends State<FarmerDashboardPage> {
                               ? const Icon(
                                   Icons.person,
                                   size: 50,
-                                  color: Colors.black,
+                                  color: Colors.white,
                                 )
                               : null,
                         ),
