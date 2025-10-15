@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wsm3/features/dashboard/presentation/pages/trips_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DriverDashboardPage extends StatefulWidget {
   const DriverDashboardPage({super.key});
@@ -20,34 +21,19 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
   String? _profileImageUrl;
   bool _isAvailable = false;
   Map<String, dynamic>? _driverData;
-
-  final List<Map<String, String>> _tripRequests = [
-    {
-      "farmer": "Sunil Perera",
-      "tripType": "Delivery",
-      "location": "Kurunegala",
-      "duration": "3 hrs",
-      "date": "2025-10-14",
-      "time": "09:00 AM",
-    },
-    {
-      "farmer": "Anjali Silva",
-      "tripType": "Pickup",
-      "location": "Gampaha",
-      "duration": "5 hrs",
-      "date": "2025-10-15",
-      "time": "01:00 PM",
-    },
-  ];
-
   final List<Map<String, String>> _acceptedTrips = [];
-
   StreamSubscription<DocumentSnapshot>? _driverSubscription;
 
   @override
   void initState() {
     super.initState();
-    _listenToDriverData(); // use real-time listener instead of one-time load
+    _listenToDriverData();
+  }
+
+  @override
+  void dispose() {
+    _driverSubscription?.cancel();
+    super.dispose();
   }
 
   void _listenToDriverData() {
@@ -60,394 +46,38 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
         .snapshots()
         .listen((doc) async {
           if (doc.exists) {
-            final data = doc.data()!;
             setState(() {
-              _driverData = data;
-              _isAvailable = data['available'] ?? false;
+              _driverData = doc.data();
+              _isAvailable = doc['available'] ?? false;
             });
           } else {
-            // Create the doc if it doesn’t exist yet
             await FirebaseFirestore.instance.collection('drivers').doc(uid).set(
               {'available': false},
             );
-            setState(() {
-              _isAvailable = false;
-            });
+            setState(() => _isAvailable = false);
           }
         });
-  }
-
-  @override
-  void dispose() {
-    _driverSubscription?.cancel();
-    super.dispose();
   }
 
   Future<void> _toggleAvailability(bool value) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    setState(() {
-      _isAvailable = value;
-    });
-
+    setState(() => _isAvailable = value);
     await FirebaseFirestore.instance.collection('drivers').doc(uid).set({
       'available': value,
     }, SetOptions(merge: true));
   }
 
-  void _acceptTrip(int index) {
-    setState(() {
-      _acceptedTrips.add(_tripRequests[index]);
-      _tripRequests.removeAt(index);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Accepted trip from ${_acceptedTrips.last["farmer"]}"),
-      ),
-    );
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      throw 'Could not launch $phoneNumber';
+    }
   }
 
-  void _rejectTrip(int index) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Rejected trip from ${_tripRequests[index]["farmer"]}"),
-      ),
-    );
-    setState(() {
-      _tripRequests.removeAt(index);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF3E0),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 15, 12, 15),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 3,
-                          offset: Offset(1, 2),
-                        ),
-                      ],
-                    ),
-                    child: Image.asset("assets/logo.png", height: 40),
-                  ),
-                  Positioned(
-                    top: 4,
-                    left: 2,
-                    child: Material(
-                      elevation: 4,
-                      shape: const CircleBorder(),
-                      color: Colors.transparent,
-                      child: CircleAvatar(
-                        backgroundColor: const Color(0xFFFFB74D),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => context.go('/role-selection'),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.notifications, size: 26),
-                          onPressed: () {},
-                        ),
-                        const SizedBox(width: 5),
-                        GestureDetector(
-                          onTap: () => _showProfileDialog(context),
-                          child: CircleAvatar(
-                            radius: 18,
-                            backgroundColor: const Color(0xFFFFB74D),
-                            child: Icon(Icons.person, color: Colors.black),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Tagline
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black54),
-                borderRadius: BorderRadius.circular(12),
-                color: const Color(0xFFFFB74D),
-              ),
-              child: const Text(
-                "තිරසාර ගොවිතැනට නව සවියක්\n"
-                "Smart farming Starts here\n"
-                "ஸ்மார்ட் விவசாயம் இங்கே தொடங்குகிறது",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-
-            // Availability switch
-            SwitchListTile(
-              title: const Text(
-                "Available for Trips",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              value: _isAvailable,
-              onChanged: (val) => _toggleAvailability(val),
-              activeColor: Colors.black,
-              activeTrackColor: const Color(0xFFFF9800),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Trip Requests
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                ),
-                child: _tripRequests.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "No trip requests available",
-                          style: TextStyle(fontSize: 16, color: Colors.black54),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: _tripRequests.length,
-                        itemBuilder: (context, index) {
-                          final trip = _tripRequests[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 5,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                    horizontal: 14,
-                                  ),
-                                  decoration: const BoxDecoration(
-                                    color: Color.fromRGBO(255, 204, 128, 1),
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(16),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    "🚜 Farmer: ${trip["farmer"]}",
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFFFFF3E0), Colors.white],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                    borderRadius: const BorderRadius.vertical(
-                                      bottom: Radius.circular(16),
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.work,
-                                            size: 18,
-                                            color: Colors.black54,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text("Trip: ${trip["tripType"]}"),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.location_on,
-                                            size: 18,
-                                            color: Colors.green,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              "Location: ${trip["location"]}",
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.timer,
-                                            size: 18,
-                                            color: Colors.blueGrey,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text("Duration: ${trip["duration"]}"),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.calendar_today,
-                                            size: 16,
-                                            color: Colors.blueGrey,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text("Date: ${trip["date"]}"),
-                                          const SizedBox(width: 16),
-                                          const Icon(
-                                            Icons.access_time,
-                                            size: 16,
-                                            color: Colors.blueGrey,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text("Time: ${trip["time"]}"),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          ElevatedButton.icon(
-                                            onPressed: () => _rejectTrip(index),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.redAccent,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            icon: const Icon(
-                                              Icons.close,
-                                              size: 18,
-                                              color: Colors.white,
-                                            ),
-                                            label: const Text(
-                                              "Reject",
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          ElevatedButton.icon(
-                                            onPressed: () => _acceptTrip(index),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.green,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            icon: const Icon(
-                                              Icons.check,
-                                              size: 18,
-                                              color: Colors.white,
-                                            ),
-                                            label: const Text(
-                                              "Accept",
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ),
-
-            // Bottom Navigation
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _bottomNavButton(Icons.chat, "Ask me", () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Chatbot feature coming soon..."),
-                      ),
-                    );
-                  }),
-                  const SizedBox(width: 25),
-                  _bottomNavButton(Icons.list, "My Trips", () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            DriverTripsPage(acceptedTrips: _acceptedTrips),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Profile Dialog
   void _showProfileDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -522,9 +152,9 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                           bottom: 0,
                           right: 4,
                           child: Container(
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color(0xFFFF9800),
+                              color: Color(0xFFFF9800),
                             ),
                             padding: const EdgeInsets.all(4),
                             child: const Icon(
@@ -546,9 +176,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                     ),
                     const SizedBox(height: 8),
                     Text("Vehicle: ${_driverData?['vehicleType'] ?? '-'}"),
-                    const SizedBox(height: 4),
                     Text("Vehicle No: ${_driverData?['vehicleno'] ?? '-'}"),
-                    const SizedBox(height: 4),
                     Text("Contact: ${_driverData?['phone'] ?? '-'}"),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -564,7 +192,6 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
-                    const SizedBox(height: 2),
                     TextButton(
                       onPressed: () {
                         Navigator.pop(ctx);
@@ -572,7 +199,7 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                       },
                       child: const Text(
                         "Logout",
-                        style: TextStyle(color: const Color(0xFFFF9800)),
+                        style: TextStyle(color: Color(0xFFFF9800)),
                       ),
                     ),
                   ],
@@ -582,6 +209,45 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
           },
         );
       },
+    );
+  }
+
+  Widget _tripRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.black54),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tripButton(
+    String label,
+    Color color,
+    IconData icon,
+    VoidCallback onPressed,
+  ) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      icon: Icon(icon, size: 18, color: Colors.white),
+      label: Text(label, style: const TextStyle(color: Colors.white)),
     );
   }
 
@@ -599,6 +265,336 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
         const SizedBox(height: 4),
         Text(label, style: const TextStyle(fontSize: 12)),
       ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFF3E0),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 15, 12, 15),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 3,
+                          offset: Offset(1, 2),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset("assets/logo.png", height: 40),
+                  ),
+                  Positioned(
+                    top: 4,
+                    left: 2,
+                    child: Material(
+                      elevation: 4,
+                      shape: const CircleBorder(),
+                      color: Colors.transparent,
+                      child: CircleAvatar(
+                        backgroundColor: const Color(0xFFFFB74D),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
+                          onPressed: () => context.go('/role-selection'),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.notifications, size: 26),
+                          onPressed: () {},
+                        ),
+                        const SizedBox(width: 5),
+                        GestureDetector(
+                          onTap: () => _showProfileDialog(context),
+                          child: const CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Color(0xFFFFB74D),
+                            child: Icon(Icons.person, color: Colors.black),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 🔸 Tagline
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black54),
+                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFFFFB74D),
+              ),
+              child: const Text(
+                "තිරසාර ගොවිතැනට නව සවියක්\nSmart farming Starts here\nஸ்மார்ட் விவசாயம் இங்கே தொடங்குகிறது",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+
+            // Availability Switch
+            SwitchListTile(
+              title: const Text(
+                "Available for Trips",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              value: _isAvailable,
+              onChanged: (val) => _toggleAvailability(val),
+              activeColor: Colors.black,
+              activeTrackColor: const Color(0xFFFF9800),
+            ),
+
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                ),
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('trip_requests')
+                      .where('status', isEqualTo: 'pending')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final trips = snapshot.data!.docs;
+                    if (trips.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          "No trip requests available",
+                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: trips.length,
+                      itemBuilder: (context, index) {
+                        final trip = trips[index];
+                        final data = trip.data() as Map<String, dynamic>;
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 5,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _tripRow(
+                                  Icons.location_on,
+                                  "Pickup: ${data['pickup'] ?? '-'}",
+                                ),
+                                _tripRow(
+                                  Icons.location_on,
+                                  "Drop-off: ${data['dropoff'] ?? '-'}",
+                                ),
+                                _tripRow(
+                                  Icons.local_shipping,
+                                  "Quantity: ${data['quantity'] ?? '0'} MT",
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.phone,
+                                      size: 18,
+                                      color: Colors.black54,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: () => _makePhoneCall(
+                                        data['contactNumber'] ?? '',
+                                      ),
+                                      child: Text(
+                                        "${data['contactNumber'] ?? '-'}",
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFFFF9800),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    _tripButton(
+                                      "Reject",
+                                      Colors.redAccent,
+                                      Icons.close,
+                                      () async {
+                                        await FirebaseFirestore.instance
+                                            .collection('trip_requests')
+                                            .doc(trip.id)
+                                            .update({'status': 'rejected'});
+                                      },
+                                    ),
+                                    const SizedBox(width: 10),
+                                    _tripButton(
+                                      "Accept",
+                                      Colors.green,
+                                      Icons.check,
+                                      () async {
+                                        final driverUid = FirebaseAuth
+                                            .instance
+                                            .currentUser
+                                            ?.uid;
+                                        if (driverUid == null) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                "Driver not logged in",
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        final driverDoc =
+                                            await FirebaseFirestore.instance
+                                                .collection('drivers')
+                                                .doc(driverUid)
+                                                .get();
+                                        final driverData =
+                                            driverDoc.data() ?? {};
+
+                                        final driverName =
+                                            driverData['fullName'] ??
+                                            'Unknown Driver';
+                                        final driverContact =
+                                            driverData['phone'] ?? 'N/A';
+
+                                        await FirebaseFirestore.instance
+                                            .collection('trip_requests')
+                                            .doc(trip.id)
+                                            .update({
+                                              'status': 'accepted',
+                                              'driverId': driverUid,
+                                              'driverName': driverName,
+                                              'driverContact': driverContact,
+                                            });
+
+                                        await FirebaseFirestore.instance
+                                            .collection('trips')
+                                            .add({
+                                              'pickup': data['pickup'] ?? '-',
+                                              'dropoff': data['dropoff'] ?? '-',
+                                              'quantity':
+                                                  data['quantity'] ?? '0',
+                                              'contactNumber':
+                                                  data['contactNumber'] ?? '-',
+                                              'driverId': driverUid,
+                                              'status': 'accepted',
+                                              'date': DateTime.now().toString(),
+                                              'time': TimeOfDay.now().format(
+                                                context,
+                                              ),
+                                            });
+
+                                        setState(() {
+                                          _acceptedTrips.add({
+                                            "pickup": data['pickup'] ?? '-',
+                                            "dropoff": data['dropoff'] ?? '-',
+                                            "quantity": data['quantity'] ?? '0',
+                                            "contactNumber":
+                                                data['contactNumber'] ?? '-',
+                                          });
+                                        });
+
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Trip accepted successfully",
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _bottomNavButton(Icons.chat, "Ask me", () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Chatbot feature coming soon..."),
+                      ),
+                    );
+                  }),
+                  const SizedBox(width: 25),
+                  _bottomNavButton(Icons.list, "My Trips", () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DriverTripsPage(),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

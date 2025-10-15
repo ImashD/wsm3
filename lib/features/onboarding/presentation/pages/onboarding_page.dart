@@ -161,7 +161,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         backgroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 34,
-                          vertical: 10,
+                          vertical: 6,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
