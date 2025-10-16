@@ -133,6 +133,7 @@ class _DriversScreenState extends State<DriversScreen> {
   Widget _buildTripRequestCard() {
     return Container(
       padding: const EdgeInsets.all(16),
+
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),

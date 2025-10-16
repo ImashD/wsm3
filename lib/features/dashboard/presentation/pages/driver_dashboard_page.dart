@@ -419,6 +419,20 @@ class _DriverDashboardPageState extends State<DriverDashboardPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                    horizontal: 4,
+                                  ),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFFF9800),
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(16),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
                                 _tripRow(
                                   Icons.location_on,
                                   "Pickup: ${data['pickup'] ?? '-'}",

@@ -104,13 +104,9 @@ class _DriverTripsPageState extends State<DriverTripsPage>
           return Center(
             child: Text(
               status == 'accepted'
-                  ? "No accepted trips yet 🚛"
-                  : "No completed trips yet ✅",
-              style: const TextStyle(
-                fontSize: 17,
-                color: Colors.black54,
-                fontWeight: FontWeight.w500,
-              ),
+                  ? "No accepted trips yet"
+                  : "No completed trips yet",
+              style: const TextStyle(fontSize: 17, color: Colors.black54),
             ),
           );
         }
@@ -236,7 +232,6 @@ class _DriverTripsPageState extends State<DriverTripsPage>
                                   style: const TextStyle(
                                     fontSize: 15,
                                     color: Color(0xFFFF9800),
-                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -246,10 +241,9 @@ class _DriverTripsPageState extends State<DriverTripsPage>
                           if (status == 'accepted') ...[
                             const SizedBox(height: 12),
                             Align(
-                              alignment: Alignment.centerRight,
                               child: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF43A047),
+                                  backgroundColor: const Color(0xFFFF9800),
                                   foregroundColor: Colors.white,
                                   elevation: 2,
                                   shape: RoundedRectangleBorder(
@@ -268,7 +262,6 @@ class _DriverTripsPageState extends State<DriverTripsPage>
                                         "Trip marked as completed ✅",
                                       ),
                                       behavior: SnackBarBehavior.floating,
-                                      backgroundColor: Color(0xFF43A047),
                                     ),
                                   );
                                 },
